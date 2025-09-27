@@ -1,0 +1,79 @@
+# ----- Rider / JetBrains -----
+.idea/
+*.iml
+
+# ----- Visual Studio / .NET -----
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Tt]estResults/
+[Aa]ppPackages/
+project.lock.json
+project.fragment.lock.json
+
+# ----- ASP.NET Core -----
+# Auto generated publish profiles
+Properties/PublishProfiles/
+*.pubxml
+*.publishsettings
+
+# dotnet user secrets
+secrets.json
+**/secrets.json
+
+# User-specific files
+.vscode/
+.vs/
+*.swp
+*.[Cc]ache
+*.dbmdl
+
+# ----- Packages -----
+*.nupkg
+*.snupkg
+*.nuspec
+*.dll
+*.exe
+*.app
+*.appx
+*.msix
+*.msixupload
+*.appxbundle
+*.msixbundle
+
+# ----- Logs / Coverage -----
+*.log
+*.tlog
+*.vspscc
+*.vsp
+*.vspx
+*.coverage
+*.coveragexml
+
+# ----- Rider Cache -----
+.idea/*
+
+# ----- Entity Framework -----
+Migrations/
+
+# ----- Docker -----
+*.dockerignore
+docker-compose.override.yml
+
+# ----- Other -----
+# Temporary files
+*.tmp
+*.temp
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
