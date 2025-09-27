@@ -58,6 +58,7 @@ secrets.json
 *.coveragexml
 
 # ----- Rider Cache -----
+.idea/
 .idea/*
 
 # ----- Entity Framework -----
@@ -76,4 +77,12 @@ docker-compose.override.yml
 _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
+
+# ----- macOS system files -----
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes
 
