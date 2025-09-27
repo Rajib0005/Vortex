@@ -1,0 +1,12 @@
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/bin/Debug/net9.0/Vortex.Domain.deps.json
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/bin/Debug/net9.0/Vortex.Domain.dll
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/bin/Debug/net9.0/Vortex.Domain.pdb
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.csproj.AssemblyReference.cache
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.AssemblyInfoInputs.cache
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.AssemblyInfo.cs
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.csproj.CoreCompileInputs.cache
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.dll
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/refint/Vortex.Domain.dll
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/Vortex.Domain.pdb
+/Users/rajibnasipuri/Dotnet/Vortex/Vortex.Domain/obj/Debug/net9.0/ref/Vortex.Domain.dll

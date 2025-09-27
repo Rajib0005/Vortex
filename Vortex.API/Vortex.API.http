@@ -1,0 +1,6 @@
+@Vortex.API_HostAddress = http://localhost:5189
+
+GET {{Vortex.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
