@@ -1,23 +1,29 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Vortex.Domain.Repositories;
 using Vortex.Infrastructure.Data;
 
 namespace Vortex.Infrastructure.Repositories;
 
-public class GenericRepository<TEntity>(VortexDbContext dbContext, DbSet<TEntity> dbSet) : IGenericRepository<TEntity>
+public class GenericRepository<TEntity>(VortexDbContext dbContext) : IGenericRepository<TEntity>
     where TEntity : class
 {
     private readonly VortexDbContext  _dbContext = dbContext;
-    private readonly DbSet<TEntity> _dbSet = dbSet;
+    private DbSet<TEntity> _dbSet => _dbContext.Set<TEntity>();
 
-    public async Task<TEntity?> GetByIdAsync(int id)
+    public async Task<TEntity?> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);
     }
 
-    public async Task<IEnumerable<TEntity>> GetAllAsync()
+    public IQueryable<TEntity> GetAllAsync()
     {
-       return  await _dbSet.ToListAsync();
+       return _dbContext.Set<TEntity>().AsNoTracking();
+    }
+
+    public IQueryable<TEntity> GetByCondition(Expression<Func<TEntity, bool>> expression)
+    {
+        return  _dbContext.Set<TEntity>().Where(expression).AsNoTracking();
     }
 
     public async Task AddAsync(TEntity entity)

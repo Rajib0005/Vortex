@@ -1,3 +1,4 @@
+using Vortex.Application;
 using Vortex.Infrastructure;
 
 namespace Vortex.API;
@@ -8,6 +9,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddInfrastructureDependency(configuration);
+        services.AddApplicationDependency();
         return services;
     }
 }

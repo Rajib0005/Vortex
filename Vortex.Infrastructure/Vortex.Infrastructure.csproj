@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Vortex.Application\Vortex.Application.csproj" />
+        <ProjectReference Include="..\Vortex.Domain\Vortex.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
