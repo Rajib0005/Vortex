@@ -1,5 +1,7 @@
 using Vortex.Application;
+using Vortex.Application.Services;
 using Vortex.Infrastructure;
+using Vortex.Infrastructure.Interfaces;
 
 namespace Vortex.API;
 

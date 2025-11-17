@@ -1,4 +1,4 @@
-namespace Vortex.Application.Dto;
+namespace Vortex.Domain.Dto;
 
 public class ProjectRoleDto
 {

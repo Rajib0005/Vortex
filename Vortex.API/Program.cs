@@ -62,8 +62,7 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("AuthorizationPolicy", policy => policy.RequireAuthenticatedUser());
+builder.Services.AddAuthorizationBuilder();
 #endregion
 
 # region Add Swagger Config
@@ -106,8 +105,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthentication();
+app.UseRouting();
 app.UseCors("VortexPolicy");
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

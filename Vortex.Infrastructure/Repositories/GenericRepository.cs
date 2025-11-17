@@ -5,10 +5,9 @@ using Vortex.Infrastructure.Data;
 
 namespace Vortex.Infrastructure.Repositories;
 
-public class GenericRepository<TEntity>(VortexDbContext dbContext) : IGenericRepository<TEntity>
+public class GenericRepository<TEntity>(VortexDbContext _dbContext) : IGenericRepository<TEntity>
     where TEntity : class
-{
-    private readonly VortexDbContext  _dbContext = dbContext;
+{ 
     private DbSet<TEntity> _dbSet => _dbContext.Set<TEntity>();
 
     public async Task<TEntity?> GetByIdAsync(Guid id)

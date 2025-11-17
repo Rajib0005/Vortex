@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Vortex.Application.Dto;
+using Vortex.Domain.Dto;
 
 namespace Vortex.API.shared.Attributes;
 

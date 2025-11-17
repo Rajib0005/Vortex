@@ -1,5 +1,7 @@
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Vortex.API.shared.Attributes;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Infrastructure.Interfaces;
@@ -12,20 +14,20 @@ public class AuthController : ControllerBase
 {
 
     private readonly ILogger<AuthController> _logger;
-    private readonly ITokenService _tokenService;
+    private readonly IAuthService _authService;
 
-    public AuthController(ILogger<AuthController> logger, ITokenService tokenService)
+    public AuthController(ILogger<AuthController> logger, IAuthService authService)
     {
         _logger = logger;
-        _tokenService = tokenService;
+        _authService = authService;
     }
 
     [HttpPost("token")]
-    public ActionResult GetToken(AuthDto user)
+    public ActionResult GetToken(Guid userId, string email, CancellationToken cancellationToken)
     {
         try
         {
-            var token = _tokenService.GenerateTokenAsync(user);
+            var token = _authService.GenerateTokenAsync(userId, email, cancellationToken);
             return Ok(token);
         }
         catch (Exception ex)
@@ -38,9 +40,18 @@ public class AuthController : ControllerBase
 
     [HttpPost]
     [Route("register")]
-    public ActionResult Signup(AuthDto user)
+    public async Task<ActionResult> Signup(AuthDto user)
     {
-        // TODO: To be implemented
-        return Ok(user);
+       var token =  await _authService.SingUpAsync(user);
+        return Ok(new { token = token });
+    }
+
+    [HttpGet]
+    [Authorize]
+    [Route("me")]
+    public async Task<IActionResult> GetUserDetails(Guid userId, CancellationToken cancellationToken)
+    {
+        var userDetails = await _authService.GetUserDetailsByIdAsync(userId, cancellationToken);
+        return Ok(userDetails);
     }
 }
