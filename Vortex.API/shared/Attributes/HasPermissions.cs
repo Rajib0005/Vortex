@@ -6,11 +6,11 @@ using Vortex.Domain.Dto;
 namespace Vortex.API.shared.Attributes;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class ProjectAcessAttribute : Attribute, IAsyncAuthorizationFilter
+public class HasPermissions : Attribute, IAsyncAuthorizationFilter
 {
     private readonly string _requiredRole;
 
-    public ProjectAcessAttribute(string requiredRole)
+    public HasPermissions(string requiredRole)
     {
         _requiredRole = requiredRole;
     }

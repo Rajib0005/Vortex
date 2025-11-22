@@ -9,6 +9,7 @@ using Vortex.Domain.Constants;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
+using Vortex.Infrastructure.CustomException;
 using Vortex.Infrastructure.Interfaces;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
@@ -36,18 +37,18 @@ public class AuthService() : IAuthService
             .ToListAsync(cancellationToken);
         
         if (userProjectRole is null || userProjectRole.Count == 0)
-            throw new Exception("Invalid username or password");
+            throw new BadRequestException("Invalid username or password");
         
         var allAccessedProjects = userProjectRole.Select(userRole =>
         {
-            var permisssions = (RolePermissionMap.RolePermissions?
+            var permissions = (RolePermissionMap.RolePermissions?
                 .GetValueOrDefault(userRole.Role.Name) ?? []).ToList();
             
             return new ProjectRolePermissionDto()
             {
-                ProjectId = userRole.ProjectId.HasValue ? userRole.ProjectId.Value : Guid.Empty,
+                ProjectId = userRole.ProjectId ??  Guid.Empty,
                 RoleId = userRole.RoleId,
-                Permission = permisssions
+                Permission = permissions
             };
         }).ToList();
         
@@ -110,11 +111,20 @@ public class AuthService() : IAuthService
         return token;
     }
 
+    public async Task<string> Login(AuthDto userModel, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByCondition(u => u.Email == userModel.Email)
+            .FirstOrDefaultAsync(cancellationToken);
+        if(user is null || BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash)) 
+            throw new ConflictException("User already exists");
+        return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
+    }
+
     public async Task<UserDetailsDto> GetUserDetailsByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var existingUser = await _userRepository. GetByIdAsync(userId);
+        var existingUser = await _userRepository.GetByIdAsync(userId);
         
-        if(existingUser is null) throw new Exception("User not found");
+        if(existingUser is null) throw new NotFoundException("User not found");
 
         var userDetails = new UserDetailsDto(
             existingUser.FullName, 
@@ -130,7 +140,6 @@ public class AuthService() : IAuthService
     {
         var existingUser = await _userRepository.
             GetByCondition(u=> u.Email == email).FirstOrDefaultAsync(cancellationToken);
-        if (existingUser is not null)  throw new Exception("User already exists");
-        
+        if (existingUser is not null)  throw new ConflictException("User already exists");
     }
 }
