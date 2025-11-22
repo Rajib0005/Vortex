@@ -8,6 +8,13 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Vortex.Domain\Vortex.Domain.csproj" />
+      <ProjectReference Include="..\Vortex.Infrastructure\Vortex.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+      <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.1" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
     </ItemGroup>
 
 </Project>
