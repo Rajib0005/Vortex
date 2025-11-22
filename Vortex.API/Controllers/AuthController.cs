@@ -23,11 +23,11 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("token")]
-    public ActionResult GetToken(Guid userId, string email, CancellationToken cancellationToken)
+    public async Task<ActionResult> GetToken(Guid userId, string email, CancellationToken cancellationToken)
     {
         try
         {
-            var token = _authService.GenerateTokenAsync(userId, email, cancellationToken);
+            var token = await _authService.GenerateTokenAsync(userId, email, cancellationToken);
             return Ok(token);
         }
         catch (Exception ex)

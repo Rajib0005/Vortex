@@ -14,15 +14,23 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace Vortex.Application.Services;
 
-public class AuthService(
-    IGenericRepository<UserProjectRole> userProjectRoleRepository,
-    IGenericRepository<UserEntity> userRepository,
-    IConfiguration config)
-    : IAuthService
+public class AuthService() : IAuthService
 {
+    private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
+    private readonly IGenericRepository<UserEntity>  _userRepository;
+    private readonly IConfiguration _config;
+    public AuthService(
+        IGenericRepository<UserProjectRole> userProjectRoleRepository,
+        IGenericRepository<UserEntity> userRepository,
+        IConfiguration config) : this()
+    {
+        _userProjectRoleRepository = userProjectRoleRepository;
+        _userRepository = userRepository;
+        _config = config;
+    }
     public async Task<string> GenerateTokenAsync(Guid userId, string email, CancellationToken cancellationToken)
     {
-        var userProjectRole = await userProjectRoleRepository
+        var userProjectRole = await _userProjectRoleRepository
             .GetByCondition(u=> u.UserId == userId)
             .Include(u=> u.Role)
             .ToListAsync(cancellationToken);
@@ -51,12 +59,12 @@ public class AuthService(
             new Claim("project_access", JsonSerializer.Serialize(allAccessedProjects))
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:AuthenticationSecretKey"]));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:AuthenticationSecretKey"]));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: config["JwtSettings:Issuer"],
-            audience: config["JwtSettings:Audience"],
+            issuer: _config["JwtSettings:Issuer"],
+            audience: _config["JwtSettings:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddHours(8),
             signingCredentials: credentials
@@ -81,7 +89,7 @@ public class AuthService(
             CreatedOn = DateTime.UtcNow
         };
         
-        await userRepository.AddAsync(newUser);
+        await _userRepository.AddAsync(newUser);
         
         
         var projectUserRole = new UserProjectRole
@@ -93,10 +101,10 @@ public class AuthService(
             
         };
         
-        await userProjectRoleRepository.AddAsync(projectUserRole);
+        await _userProjectRoleRepository.AddAsync(projectUserRole);
         
-        await userRepository.SaveChangesAsync();
-        await userProjectRoleRepository.SaveChangesAsync();
+        await _userRepository.SaveChangesAsync();
+        await _userProjectRoleRepository.SaveChangesAsync();
         
         var token = await GenerateTokenAsync(newUser.Id, userModel.Email, cancellationToken);
         return token;
@@ -104,7 +112,7 @@ public class AuthService(
 
     public async Task<UserDetailsDto> GetUserDetailsByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var existingUser = await userRepository. GetByIdAsync(userId);
+        var existingUser = await _userRepository. GetByIdAsync(userId);
         
         if(existingUser is null) throw new Exception("User not found");
 
@@ -120,7 +128,7 @@ public class AuthService(
 
     private async Task DemandValidUser(string email, CancellationToken cancellationToken)
     {
-        var existingUser = await userRepository.
+        var existingUser = await _userRepository.
             GetByCondition(u=> u.Email == email).FirstOrDefaultAsync(cancellationToken);
         if (existingUser is not null)  throw new Exception("User already exists");
         
