@@ -14,6 +14,15 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["AuthenticationSecretKey"]!);
 
 // Add services to the container.
 builder.Services.AddDependencyInjection(builder.Configuration);
+#region HttpContext Accessor
+builder.Services.AddHttpContextAccessor();
+#endregion
+
+#region Add Exception Policy
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+#endregion
+
 builder.Services.AddControllers();
 
 #region CORS Policy
@@ -107,6 +116,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("VortexPolicy");
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
