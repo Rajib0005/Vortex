@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Vortex.Application.Interfaces;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
@@ -19,14 +20,17 @@ public class AuthService() : IAuthService
 {
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
     private readonly IGenericRepository<UserEntity>  _userRepository;
+    private readonly IUserService _userService;
     private readonly IConfiguration _config;
     public AuthService(
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IGenericRepository<UserEntity> userRepository,
+        IUserService userService,
         IConfiguration config) : this()
     {
         _userProjectRoleRepository = userProjectRoleRepository;
         _userRepository = userRepository;
+        _userService = userService;
         _config = config;
     }
     public async Task<string> GenerateTokenAsync(Guid userId, string email, CancellationToken cancellationToken)
@@ -116,13 +120,14 @@ public class AuthService() : IAuthService
         var user = await _userRepository.GetByCondition(u => u.Email == userModel.Email)
             .FirstOrDefaultAsync(cancellationToken);
         if(user is null || BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash)) 
-            throw new ConflictException("User already exists");
+            throw new BadRequestException("Invalid username or password");
         return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
     }
 
-    public async Task<UserDetailsDto> GetUserDetailsByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<UserDetailsDto> GetUserDetailsByIdAsync(CancellationToken cancellationToken = default)
     {
-        var existingUser = await _userRepository.GetByIdAsync(userId);
+        var currentUserId = _userService.GetCurrentUserId();
+        var existingUser = await _userRepository.GetByIdAsync(currentUserId);
         
         if(existingUser is null) throw new NotFoundException("User not found");
 

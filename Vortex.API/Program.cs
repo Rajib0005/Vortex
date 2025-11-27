@@ -14,6 +14,9 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["AuthenticationSecretKey"]!);
 
 // Add services to the container.
 builder.Services.AddDependencyInjection(builder.Configuration);
+#region HttpContext Accessor
+builder.Services.AddHttpContextAccessor();
+#endregion
 
 #region Add Exception Policy
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

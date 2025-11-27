@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Vortex.Application.Interfaces;
 using Vortex.Application.Services;
 using Vortex.Infrastructure.Interfaces;
 
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         // Auth
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
         
         return services;
     }

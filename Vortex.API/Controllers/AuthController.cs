@@ -62,9 +62,9 @@ public class AuthController : ControllerBase
     [HttpGet]
     [Authorize]
     [Route("me")]
-    public async Task<IActionResult> GetUserDetails(Guid userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetUserDetails(CancellationToken cancellationToken)
     {
-        var userDetails = await _authService.GetUserDetailsByIdAsync(userId, cancellationToken);
+        var userDetails = await _authService.GetUserDetailsByIdAsync(cancellationToken);
         return Ok(BaseResponse<UserDetailsDto>.SuccessResponse(userDetails));
     }
 }
