@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -26,6 +27,7 @@ public class HasPermissions : Attribute, IAsyncAuthorizationFilter
         }
 
         var projectIdFromRoute = context.RouteData.Values["projectId"]?.ToString();
+        
         if (string.IsNullOrEmpty(projectIdFromRoute))
         {
             context.Result = new BadRequestObjectResult("Missing projectId in route");
