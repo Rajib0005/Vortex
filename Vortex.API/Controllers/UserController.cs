@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Vortex.API.Dtos;
 using Vortex.API.shared.Attributes;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
+using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
 
 namespace Vortex.API.Controllers;
 
@@ -17,6 +19,22 @@ public class UserController(IUserService userService) : ControllerBase
     public async Task<IActionResult> GetInviteUserDetails(CancellationToken cancellationToken)
     {
         var inviteUserDetailsModel = await userService.GetInviteUserDetails(cancellationToken);
-        return Ok(BaseResponse<InviteUserDetails>.SuccessResponse(inviteUserDetailsModel));
+        return Ok(BaseResponse<ProjectRoleDto>.SuccessResponse(inviteUserDetailsModel));
+    }
+    
+    [HttpPost]
+    [Route("invite-users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> InviteUserDetails(List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await userService.InviteUserAsync(inviteUserDto, cancellationToken);
+            return Ok(BaseResponse<string>.SuccessResponse("Invite users successfully"));
+        }
+        catch (Exception ex)
+        {
+            return Ok(BaseResponse<Exception>.FailureResponse(ex.Message));
+        }
     }
 }

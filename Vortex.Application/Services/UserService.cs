@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Vortex.API.Dtos;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
+using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
 
 namespace Vortex.Application.Services;
 
@@ -43,38 +45,57 @@ public class UserService: IUserService
         return existingUser is not null;
     }
 
-    public async Task<InviteUserDetails> GetInviteUserDetails(CancellationToken cancellationToken)
+    public async Task<ProjectRoleDto> GetInviteUserDetails(CancellationToken cancellationToken)
     {
-        // TODO: Other user cannot be invited.
+        var  projects = await _projectRepository.GetByCondition(proj=> proj.IsActive)
+            .Select(x=> new DropdownOptionModel<Guid>{Value = x.Id, Label = x.ProjectName})
+            .ToListAsync(cancellationToken);
         
         var roles = _roleRepository.GetAllAsync()
-            .Select(r => new DropdownOptionModel<Guid>
-            {
-                Value = r.Id,
-                Label = r.Name,
-            }).ToList();
-        var activeProjectUserDetails = await _userProjectRoleRepository
-            .GetByCondition(urp => urp.Project.IsActive)
-            .GroupBy(urp => urp.ProjectId)
-            .Select(project => new InviteUserDetails
-            {
-                Projects = project.Select(urpd => new DropdownOptionModel<Guid?, List<DropdownOptionModel<Guid>>>
-                {
-                    Value = urpd.ProjectId,
-                    Label = urpd.Project.ProjectName,
-                    ExtraData = new List<DropdownOptionModel<Guid>>
-                    {
-                       new() {Value = urpd.UserId, Label = urpd.User.UserName}
-                    }
+            .Select(r => new DropdownOptionModel<Guid> {Value = r.Id, Label = r.Name}).ToList();
 
-                }),
-                Roles = roles
-            }).FirstOrDefaultAsync(cancellationToken);
-        return activeProjectUserDetails;
+        return new ProjectRoleDto {Projects = projects, Roles = roles};
     }
 
-    public async Task InviteUserAsync(InviteUserDetails inviteUserDetails, CancellationToken cancellationToken)
+    public async Task InviteUserAsync(List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var userEmailsInModel = inviteUserDto.Select(x => x.UserEmail.ToLower()).ToList();
+        var assignedProjects =inviteUserDto.Select(x=> x.ProjectId).ToList();
+        var allReadyAssignedUsers = await GetAlreadyExistingUsersInProject(userEmailsInModel, assignedProjects, cancellationToken);
+        var onlyInvitedUsers = inviteUserDto.Where(x => !allReadyAssignedUsers.Contains(x.UserEmail));
+        
+        var invitedUserDetails = onlyInvitedUsers.Select(user=>
+        {
+            var userId = Guid.NewGuid();
+            return new UserProjectRole
+            {
+                User = new UserEntity
+                {
+                    Id = userId,
+                    Email = user.UserEmail.ToLower(),
+                    UserName = user.UserEmail.ToLower(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("hello@123"),
+                    CreatedOn = DateTime.UtcNow
+                },
+                UserId = userId,
+                ProjectId = user.ProjectId,
+                RoleId = user.RoleId,
+            };
+        }).ToList();
+        
+        await _userProjectRoleRepository.AddRangeAsync(invitedUserDetails);
+        await _userRepository.SaveChangesAsync();
+        
+        //TODO: Email Service should be implemented
+    }
+
+    private async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
+    {
+        var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user => 
+            userEmails.Contains(user.User.Email) && projectIds.Contains(user.Project.Id)).Select(x=> x.User.Email).ToListAsync(cancellationToken);
+        
+        return usersAlreadyInSameProject;
     }
 }

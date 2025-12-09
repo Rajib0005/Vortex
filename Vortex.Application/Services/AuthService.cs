@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -126,7 +127,7 @@ public class AuthService() : IAuthService
     {
         var user = await _userRepository.GetByCondition(u => u.Email == userModel.Email)
             .FirstOrDefaultAsync(cancellationToken);
-        if (user is null || BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash))
+        if (user is null || !BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash, false, HashType.SHA256))
             throw new BadRequestException("Invalid username or password");
         return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
     }

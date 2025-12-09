@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
-            return StatusCode(500);
+            return Ok(BaseResponse<Exception>.FailureResponse(ex.Message));
         }
 
     }
