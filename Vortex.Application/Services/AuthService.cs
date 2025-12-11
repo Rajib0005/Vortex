@@ -127,7 +127,7 @@ public class AuthService() : IAuthService
     {
         var user = await _userRepository.GetByCondition(u => u.Email == userModel.Email)
             .FirstOrDefaultAsync(cancellationToken);
-        if (user is null || !BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash, false, HashType.SHA256))
+        if (user is null || !BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash))
             throw new BadRequestException("Invalid username or password");
         return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
     }

@@ -1,4 +1,4 @@
-namespace Vortex.API.Dtos;
+namespace Vortex.Application.Dtos;
 
 public class InviteUserDto
 {

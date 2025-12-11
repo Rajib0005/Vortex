@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Vortex.API.Dtos;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
@@ -62,7 +61,7 @@ public class UserService: IUserService
         var userEmailsInModel = inviteUserDto.Select(x => x.UserEmail.ToLower()).ToList();
         var assignedProjects =inviteUserDto.Select(x=> x.ProjectId).ToList();
         var allReadyAssignedUsers = await GetAlreadyExistingUsersInProject(userEmailsInModel, assignedProjects, cancellationToken);
-        var onlyInvitedUsers = inviteUserDto.Where(x => !allReadyAssignedUsers.Contains(x.UserEmail));
+        var onlyInvitedUsers = inviteUserDto.Where(x => !allReadyAssignedUsers.Contains(x.UserEmail.ToLower()));
         
         var invitedUserDetails = onlyInvitedUsers.Select(user=>
         {
@@ -86,11 +85,10 @@ public class UserService: IUserService
         }).ToList();
         
         await _userProjectRoleRepository.AddRangeAsync(invitedUserDetails);
-        await _userRepository.SaveChangesAsync();
+        await _userProjectRoleRepository.SaveChangesAsync();
         
         //TODO: Email Service should be implemented
     }
-
     private async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
     {
         var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user => 

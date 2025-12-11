@@ -1,4 +1,3 @@
-using Vortex.API.Dtos;
 using Vortex.Application.Dtos;
 
 namespace Vortex.Application.Interfaces;

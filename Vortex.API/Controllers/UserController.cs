@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Vortex.API.Dtos;
-using Vortex.API.shared.Attributes;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
@@ -11,7 +9,7 @@ namespace Vortex.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class UserController(IUserService userService) : ControllerBase
+public class UserController(IUserService userService, ILogger _logger) : ControllerBase
 {
     [HttpGet]
     [Route("get-invite-users")]
@@ -25,7 +23,7 @@ public class UserController(IUserService userService) : ControllerBase
     [HttpPost]
     [Route("invite-users")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> InviteUserDetails(List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
+    public async Task<IActionResult> InviteUserDetails([FromBody] List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
     {
         try
         {
@@ -34,7 +32,8 @@ public class UserController(IUserService userService) : ControllerBase
         }
         catch (Exception ex)
         {
-            return Ok(BaseResponse<Exception>.FailureResponse(ex.Message));
+            _logger.LogError($"Invite users failed: {ex.Message}");
+            return StatusCode(500, BaseResponse<string>.FailureResponse("An error occured while inviting users", [ex.Message]));
         }
     }
 }

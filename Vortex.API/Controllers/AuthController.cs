@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
-            return StatusCode(500);
+            return Unauthorized(BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
         }
 
     }
@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
-            return Ok(BaseResponse<Exception>.FailureResponse(ex.Message));
+            return Unauthorized(BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
         }
 
     }
@@ -55,8 +55,15 @@ public class AuthController : ControllerBase
     [Route("register")]
     public async Task<ActionResult> Signup(AuthDto user)
     {
-       var token =  await _authService.SingUpAsync(user);
-        return Ok(BaseResponse<string>.SuccessResponse(token, "Token generated successfully"));
+        try
+        {
+            var token =  await _authService.SingUpAsync(user);
+            return Ok(BaseResponse<string>.SuccessResponse(token, "Token generated successfully"));
+        } catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
+        }
     }
 
     [HttpGet]
@@ -64,7 +71,15 @@ public class AuthController : ControllerBase
     [Route("me")]
     public async Task<IActionResult> GetUserDetails(CancellationToken cancellationToken)
     {
-        var userDetails = await _authService.GetUserDetailsByIdAsync(cancellationToken);
-        return Ok(BaseResponse<UserDetailsDto>.SuccessResponse(userDetails));
+        try
+        {
+            var userDetails = await _authService.GetUserDetailsByIdAsync(cancellationToken);
+            return Unauthorized(BaseResponse<UserDetailsDto>.SuccessResponse(userDetails));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return Unauthorized(BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
+        }
     }
 }
