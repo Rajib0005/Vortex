@@ -15,9 +15,9 @@ public static class Permissions
 
 public static class RolePermissionMap
 {
-    public static readonly Dictionary<string, string[]> RolePermissions = new()
+    public static readonly Dictionary<Guid, string[]> RolePermissions = new()
     {
-        ["Admin"] =
+        [Constants.AdminRoleId] =
         [
             Permissions.Project_Create,
             Permissions.Project_View,
@@ -27,12 +27,12 @@ public static class RolePermissionMap
             Permissions.User_Remove,
             Permissions.User_View
         ],
-        ["Manager"] =[
+        [Constants.ManagerRoleId] =[
             Permissions.Project_View,
             Permissions.Project_Update,
             Permissions.User_Invite,
             Permissions.User_View,
         ],
-        ["Member"] = [Permissions.Project_View]
+        [Constants.MemberRoleId] = [Permissions.Project_View]
     };
 } 

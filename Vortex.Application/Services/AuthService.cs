@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -19,50 +20,56 @@ namespace Vortex.Application.Services;
 public class AuthService() : IAuthService
 {
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
-    private readonly IGenericRepository<UserEntity>  _userRepository;
+    private readonly IGenericRepository<UserEntity> _userRepository;
+    private readonly IGenericRepository<ProjectEntity> _projectRepository;
     private readonly IUserService _userService;
     private readonly IConfiguration _config;
+
     public AuthService(
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IGenericRepository<UserEntity> userRepository,
+        IGenericRepository<ProjectEntity> projectRepository,
         IUserService userService,
         IConfiguration config) : this()
     {
         _userProjectRoleRepository = userProjectRoleRepository;
         _userRepository = userRepository;
         _userService = userService;
+        _projectRepository = projectRepository;
         _config = config;
     }
+
     public async Task<string> GenerateTokenAsync(Guid userId, string email, CancellationToken cancellationToken)
     {
         var userProjectRole = await _userProjectRoleRepository
-            .GetByCondition(u=> u.UserId == userId)
-            .Include(u=> u.Role)
+            .GetByCondition(u => u.UserId == userId)
+            .Include(u => u.Role)
             .ToListAsync(cancellationToken);
-        
+
         if (userProjectRole is null || userProjectRole.Count == 0)
             throw new BadRequestException("Invalid username or password");
-        
+
         var allAccessedProjects = userProjectRole.Select(userRole =>
         {
-            var permissions = (RolePermissionMap.RolePermissions?
-                .GetValueOrDefault(userRole.Role.Name) ?? []).ToList();
-            
+            var permissions = (RolePermissionMap.RolePermissions[userRole.RoleId] ?? []).ToList();
+
             return new ProjectRolePermissionDto()
             {
-                ProjectId = userRole.ProjectId ??  Guid.Empty,
+                ProjectId = userRole.ProjectId ?? Guid.Empty,
                 RoleId = userRole.RoleId,
                 Permission = permissions
             };
         }).ToList();
         
+        var rolesClaim = userProjectRole.Select(role => new Claim(ClaimTypes.Role, role.Role.Name)).ToList();
+
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("project_access", JsonSerializer.Serialize(allAccessedProjects))
-        };
+            new Claim("project_access", JsonSerializer.Serialize(allAccessedProjects)),
+        }.Concat(rolesClaim).ToList();
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JwtSettings:AuthenticationSecretKey"]));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -80,8 +87,9 @@ public class AuthService() : IAuthService
 
     public async Task<string> SingUpAsync(AuthDto userModel, CancellationToken cancellationToken)
     {
-        await DemandValidUser(userModel.Email, cancellationToken);
-        
+        var isExistingUser = await _userService.IsExistingUser(userModel.Email, cancellationToken);
+        if (isExistingUser) throw new ConflictException("User already exists");
+
         var hashedPassword = BCrypt.Net.BCrypt.HashPassword(userModel.Password);
         var newUser = new UserEntity()
         {
@@ -93,24 +101,24 @@ public class AuthService() : IAuthService
             PasswordHash = hashedPassword,
             CreatedOn = DateTime.UtcNow
         };
-        
+
         await _userRepository.AddAsync(newUser);
-        
-        
+
+
         var projectUserRole = new UserProjectRole
         {
             Id = Guid.NewGuid(),
             UserId = newUser.Id,
             RoleId = Constants.AdminRoleId,
             ProjectId = Constants.DefaultProjectId,
-            
+
         };
-        
+
         await _userProjectRoleRepository.AddAsync(projectUserRole);
-        
+
         await _userRepository.SaveChangesAsync();
         await _userProjectRoleRepository.SaveChangesAsync();
-        
+
         var token = await GenerateTokenAsync(newUser.Id, userModel.Email, cancellationToken);
         return token;
     }
@@ -119,7 +127,7 @@ public class AuthService() : IAuthService
     {
         var user = await _userRepository.GetByCondition(u => u.Email == userModel.Email)
             .FirstOrDefaultAsync(cancellationToken);
-        if(user is null || BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash)) 
+        if (user is null || !BCrypt.Net.BCrypt.Verify(userModel.Password, user.PasswordHash))
             throw new BadRequestException("Invalid username or password");
         return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
     }
@@ -128,23 +136,16 @@ public class AuthService() : IAuthService
     {
         var currentUserId = _userService.GetCurrentUserId();
         var existingUser = await _userRepository.GetByIdAsync(currentUserId);
-        
-        if(existingUser is null) throw new NotFoundException("User not found");
+
+        if (existingUser is null) throw new NotFoundException("User not found");
 
         var userDetails = new UserDetailsDto(
-            existingUser.FullName, 
+            existingUser.FullName,
             existingUser.Email,
             existingUser.UserName,
             existingUser.IsActive,
             existingUser.EmailConfirmed
         );
         return userDetails;
-    }
-
-    private async Task DemandValidUser(string email, CancellationToken cancellationToken)
-    {
-        var existingUser = await _userRepository.
-            GetByCondition(u=> u.Email == email).FirstOrDefaultAsync(cancellationToken);
-        if (existingUser is not null)  throw new ConflictException("User already exists");
     }
 }

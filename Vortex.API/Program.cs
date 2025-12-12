@@ -71,7 +71,7 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
-builder.Services.AddAuthorizationBuilder();
+builder.Services.AddAuthorization();
 #endregion
 
 # region Add Swagger Config
