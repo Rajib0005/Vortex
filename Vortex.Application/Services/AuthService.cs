@@ -131,21 +131,4 @@ public class AuthService() : IAuthService
             throw new BadRequestException("Invalid username or password");
         return await GenerateTokenAsync(user.Id, user.Email, cancellationToken);
     }
-
-    public async Task<UserDetailsDto> GetUserDetailsByIdAsync(CancellationToken cancellationToken = default)
-    {
-        var currentUserId = _userService.GetCurrentUserId();
-        var existingUser = await _userRepository.GetByIdAsync(currentUserId);
-
-        if (existingUser is null) throw new NotFoundException("User not found");
-
-        var userDetails = new UserDetailsDto(
-            existingUser.FullName,
-            existingUser.Email,
-            existingUser.UserName,
-            existingUser.IsActive,
-            existingUser.EmailConfirmed
-        );
-        return userDetails;
-    }
 }
