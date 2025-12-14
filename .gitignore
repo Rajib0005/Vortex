@@ -62,7 +62,6 @@ secrets.json
 .idea/*
 
 # ----- Entity Framework -----
-Migrations/
 
 # ----- Docker -----
 *.dockerignore
