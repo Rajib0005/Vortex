@@ -31,7 +31,12 @@ public class UserService: IUserService
         _projectRepository = projectRepository;
         _userProjectRoleRepository = userProjectRoleRepository;
     }
-    
+    public Guid GetCurrentUserId()
+    {
+        var userClaim = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = userClaim != null ? userClaim.Value : string.Empty;
+        return Guid.Parse(userId);
+    }
     public async Task<bool> IsExistingUser(string email, CancellationToken cancellationToken)
     {
         var existingUser = await _userRepository.GetByCondition(u => u.Email == email).
@@ -113,12 +118,5 @@ public class UserService: IUserService
             userEmails.Contains(user.User.Email) && projectIds.Contains(user.Project.Id)).Select(x=> x.User.Email).ToListAsync(cancellationToken);
         
         return usersAlreadyInSameProject;
-    }
-    
-    private Guid GetCurrentUserId()
-    {
-        var userClaim = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
-        var userId = userClaim != null ? userClaim.Value : string.Empty;
-        return Guid.Parse(userId);
     }
 }
