@@ -41,7 +41,7 @@ public class UserController: ControllerBase
     
     [HttpGet]
     [Route("get-invite-users")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GetInviteUserDetails(CancellationToken cancellationToken)
     {
         var inviteUserDetailsModel = await _userService.GetInviteUserDetails(cancellationToken);
@@ -50,7 +50,7 @@ public class UserController: ControllerBase
     
     [HttpPost]
     [Route("invite-users")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> InviteUserDetails([FromBody] List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
     {
         try

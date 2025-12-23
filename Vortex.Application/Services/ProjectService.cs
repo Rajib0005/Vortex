@@ -1,6 +1,8 @@
+using System.Reflection.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
+using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Infrastructure.CustomException;
@@ -15,7 +17,7 @@ public class ProjectService : IProjectService
 
     public ProjectService(
         IGenericRepository<ProjectEntity> projectRepository,
-        IGenericRepository<UserProjectRole> userProjectRoleRepository, 
+        IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IUserService userService)
     {
         _projectRepository = projectRepository;
@@ -34,9 +36,24 @@ public class ProjectService : IProjectService
         throw new NotImplementedException();
     }
 
-    public async Task<IEnumerable<UpsertProjectDto>> GetProjectsOfUser(Guid userId, CancellationToken cancellation)
+    public async Task<IEnumerable<ProjectCardsDto>> GetProjectsOfUser(Guid userId, CancellationToken cancellation)
     {
-        throw new NotImplementedException();
+        var currentUser = await _userService.GetUserDetailsByIdAsync(cancellation);
+        var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
+        var isManager = currentUser.RoleId == Constants.ManagerRoleId;
+        var projects = await _userProjectRoleRepository.GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
+            .Select(upr => new ProjectCardsDto
+            {
+                ProjectTitle = upr.Project.ProjectName,
+                Description = upr.Project.Description,
+                IsAcvtive = upr.Project.IsActive,
+                NumberOfCompletedTasks = 0,
+                NumberOfTotalTasks = 0,
+                StartDate = upr.Project.CreatedAt,
+                CanDelete = isAdmin,
+                CanMark = isAdmin || isManager
+            }).ToListAsync(cancellation);
+        return projects;
     }
 
     #region private methods
@@ -45,7 +62,7 @@ public class ProjectService : IProjectService
     {
         var existingProject = await _projectRepository.GetByCondition(project => project.ProjectName == projectModel.ProjectName
                 && project.ProjectKey == projectModel.ProjectKey)
-            .FirstOrDefaultAsync(p=> p.IsActive && !p.IsDeleted, cancellation);
+            .FirstOrDefaultAsync(p => p.IsActive && !p.IsDeleted, cancellation);
 
         if (existingProject is not null) throw new ConflictException("Project is already existed");
         var currentUserId = _userService.GetCurrentUserId();
@@ -87,7 +104,7 @@ public class ProjectService : IProjectService
         existingProject.IsDeleted = false;
         existingProject.UpdatedAt = DateTime.UtcNow;
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
-        
+
         await _projectRepository.SaveChangesAsync();
     }
 

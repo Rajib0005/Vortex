@@ -102,6 +102,7 @@ public class UserService: IUserService
         if (existingUser is null || role is null) throw new NotFoundException("User not found");
 
         var userDetails = new UserDetailsDto(
+            existingUser.Id,
             existingUser.FullName,
             existingUser.Email,
             existingUser.UserName,

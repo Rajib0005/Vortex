@@ -43,8 +43,8 @@ public class ProjectController : Controller
     {
         try
         {
-            await _projectService.GetProjectsOfUser(userId, cancellation);
-            return Ok(BaseResponse<string>.SuccessResponse(null));
+            var projects = await _projectService.GetProjectsOfUser(userId, cancellation);
+            return Ok(BaseResponse<IEnumerable<ProjectCardsDto>>.SuccessResponse(projects));
         }
         catch (Exception ex)
         {
