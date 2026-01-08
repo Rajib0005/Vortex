@@ -6,6 +6,7 @@ using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
+using Vortex.Infrastructure.CustomException;
 using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
 
 namespace Vortex.Application.Services;
@@ -21,8 +22,8 @@ public class UserService: IUserService
         IHttpContextAccessor httpContextAccessor
         , IGenericRepository<UserEntity>  userRepository
         , IGenericRepository<RoleEntity>  roleRepository
-        , IGenericRepository<ProjectEntity> projectRepository,
-        IGenericRepository<UserProjectRole> userProjectRoleRepository)
+        , IGenericRepository<ProjectEntity> projectRepository
+        , IGenericRepository<UserProjectRole> userProjectRoleRepository)
     {
         _httpContextAccessor = httpContextAccessor;
         _userRepository = userRepository;
@@ -36,7 +37,6 @@ public class UserService: IUserService
         var userId = userClaim != null ? userClaim.Value : string.Empty;
         return Guid.Parse(userId);
     }
-    
     public async Task<bool> IsExistingUser(string email, CancellationToken cancellationToken)
     {
         var existingUser = await _userRepository.GetByCondition(u => u.Email == email).
@@ -88,6 +88,30 @@ public class UserService: IUserService
         await _userProjectRoleRepository.SaveChangesAsync();
         
         //TODO: Email Service should be implemented
+    }
+
+    public async Task<UserDetailsDto> GetUserDetailsByIdAsync(CancellationToken cancellationToken = default)
+    {
+        var currentUserId = GetCurrentUserId();
+        var existingUser = await _userRepository.GetByIdAsync(currentUserId);
+        var role = await _userProjectRoleRepository
+            .GetByCondition(x=> x.UserId == currentUserId)
+            .Select(x=> x.Role)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existingUser is null || role is null) throw new NotFoundException("User not found");
+
+        var userDetails = new UserDetailsDto(
+            existingUser.Id,
+            existingUser.FullName,
+            existingUser.Email,
+            existingUser.UserName,
+            existingUser.IsActive,
+            existingUser.EmailConfirmed,
+            role.Id,
+            role.Name
+        );
+        return userDetails;
     }
     private async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
     {

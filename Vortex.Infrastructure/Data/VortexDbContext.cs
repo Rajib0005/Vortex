@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Vortex.Domain;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 

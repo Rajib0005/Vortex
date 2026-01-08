@@ -13,6 +13,10 @@ public class TaskEntity
     public string Level { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public Guid CreatedBy { get; set; }
+    public Guid UpdatedBy { get; set; }
     public virtual ICollection<AttachmentEntity> Attachments { get; set; } = new List<AttachmentEntity>();
     public virtual ProjectEntity Project { get; set; }
 }

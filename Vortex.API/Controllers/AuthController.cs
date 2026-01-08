@@ -65,21 +65,4 @@ public class AuthController : ControllerBase
             return StatusCode(500, BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
         }
     }
-
-    [HttpGet]
-    [Authorize]
-    [Route("me")]
-    public async Task<IActionResult> GetUserDetails(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var userDetails = await _authService.GetUserDetailsByIdAsync(cancellationToken);
-            return Unauthorized(BaseResponse<UserDetailsDto>.SuccessResponse(userDetails));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return Unauthorized(BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
-        }
-    }
 }
