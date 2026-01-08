@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
@@ -33,7 +32,16 @@ public class ProjectService : IProjectService
 
     public async Task DeleteProject(Guid projectId, CancellationToken cancellation)
     {
-        throw new NotImplementedException();
+        var existingProject = await _projectRepository.GetByIdAsync(projectId);
+        var projectUserRoleMapper = await _userProjectRoleRepository.GetByCondition((x)=> x.ProjectId == projectId)
+            .FirstOrDefaultAsync(cancellation);
+        if(existingProject is null || projectUserRoleMapper is null) throw new BadRequestException("No project found");
+        
+        existingProject.IsDeleted = false;
+        // DELETE FROM USER-PROJECT-MAP BUT UPDATE IN PROJECT TABLE WITH SOFT DELETE
+        _userProjectRoleRepository.DeleteAsync(projectUserRoleMapper);
+        await _projectRepository.AddAsync(existingProject);
+        await _projectRepository.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<ProjectCardsDto>> GetProjectsOfUser(Guid userId, CancellationToken cancellation)
@@ -44,7 +52,7 @@ public class ProjectService : IProjectService
         var projects = await _userProjectRoleRepository.GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
             .Select(upr => new ProjectCardsDto
             {
-                ProjectTitle = upr.Project.ProjectName,
+                Title = upr.Project.ProjectName,
                 Description = upr.Project.Description,
                 IsAcvtive = upr.Project.IsActive,
                 NumberOfCompletedTasks = 0,
@@ -54,6 +62,24 @@ public class ProjectService : IProjectService
                 CanMark = isAdmin || isManager
             }).ToListAsync(cancellation);
         return projects;
+    }
+
+    public async Task<ProjectCardsDto> GetProjectDetailsById(Guid projectId)
+    {
+        var project = await _projectRepository.GetByIdAsync(projectId);
+        if(project is null) throw new BadRequestException("Project not found");
+        
+        var projectDetails = new ProjectCardsDto
+        {
+            Title = project.ProjectName,
+            Description = project.Description,
+            IsAcvtive = project.IsActive,
+            NumberOfCompletedTasks = 0,
+            NumberOfTotalTasks = 0,
+            StartDate = project.CreatedAt,
+        };
+
+        return projectDetails;
     }
 
     #region private methods
@@ -106,6 +132,11 @@ public class ProjectService : IProjectService
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
         await _projectRepository.SaveChangesAsync();
+    }
+
+    private void ToProjectModelConvertion(ProjectEntity project)
+    {
+        // YET to be implemneted
     }
 
     #endregion

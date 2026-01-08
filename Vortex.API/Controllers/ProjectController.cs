@@ -25,10 +25,7 @@ public class ProjectController : Controller
         try
         {
             await _projectService.UpsertProjectAsync(projectModel, cancellation);
-            return Ok(BaseResponse<string>.SuccessResponse(
-                null,
-                $"Project {(projectModel.ProjectId is null ? "created" : "updated")} successfully"
-            ));
+            return Ok(BaseResponse<string>.SuccessResponse($"Project {(projectModel.ProjectId is null ? "created" : "updated")} successfully"));
         }
         catch (Exception ex)
         {
@@ -50,6 +47,38 @@ public class ProjectController : Controller
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error retrieving project", [ex.Message]));
+        }
+    }
+
+    [HttpPost("get-projects-project")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> GetAllProjectDetails(Guid projectId)
+    {
+        try
+        {
+            var projectDetails = await _projectService.GetProjectDetailsById(projectId);
+            return Ok(BaseResponse<ProjectCardsDto>.SuccessResponse(projectDetails));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error retrieving project", [ex.Message]));
+        }
+    }
+
+    [HttpPost("delete-project")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteProject(Guid projectId, CancellationToken cancellation)
+    {
+        try
+        {
+            await _projectService.DeleteProject(projectId, cancellation);
+            return Ok(BaseResponse<string>.SuccessResponse("Project deleted successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error deleting project", [ex.Message]));
         }
     }
 }
