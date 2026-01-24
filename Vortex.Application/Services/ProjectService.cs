@@ -4,7 +4,7 @@ using Vortex.Application.Interfaces;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
-using Vortex.Infrastructure.CustomException;
+using Vortex.Domain.Exceptions;
 
 namespace Vortex.Application.Services;
 
@@ -37,10 +37,8 @@ public class ProjectService : IProjectService
             .FirstOrDefaultAsync(cancellation);
         if(existingProject is null || projectUserRoleMapper is null) throw new BadRequestException("No project found");
         
-        existingProject.IsDeleted = false;
-        // DELETE FROM USER-PROJECT-MAP BUT UPDATE IN PROJECT TABLE WITH SOFT DELETE
-        _userProjectRoleRepository.DeleteAsync(projectUserRoleMapper);
-        await _projectRepository.AddAsync(existingProject);
+        existingProject.IsDeleted = true;
+        _userProjectRoleRepository.UpdateAsync(projectUserRoleMapper);
         await _projectRepository.SaveChangesAsync();
     }
 

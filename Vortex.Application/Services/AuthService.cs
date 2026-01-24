@@ -11,8 +11,7 @@ using Vortex.Domain.Constants;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
-using Vortex.Infrastructure.CustomException;
-using Vortex.Infrastructure.Interfaces;
+using Vortex.Domain.Exceptions;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace Vortex.Application.Services;

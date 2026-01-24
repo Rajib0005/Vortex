@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vortex.Application.Interfaces;
 using Vortex.Application.Services;
-using Vortex.Infrastructure.Interfaces;
 
 namespace Vortex.Application;
 

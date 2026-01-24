@@ -6,7 +6,7 @@ using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
-using Vortex.Infrastructure.CustomException;
+using Vortex.Domain.Exceptions;
 using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
 
 namespace Vortex.Application.Services;

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
+using Vortex.Domain.Exceptions;
 using Vortex.Domain.Dto;
-using Vortex.Infrastructure.CustomException;
 
 namespace Vortex.API;
 

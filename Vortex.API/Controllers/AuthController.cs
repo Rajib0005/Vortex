@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vortex.Domain.Dto;
-using Vortex.Infrastructure.Interfaces;
+using Vortex.Application.Interfaces;
 
 namespace Vortex.API.Controllers;
 
