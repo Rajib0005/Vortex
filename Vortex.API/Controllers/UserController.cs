@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
-using Vortex.Infrastructure.Interfaces;
 using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
 
 namespace Vortex.API.Controllers;

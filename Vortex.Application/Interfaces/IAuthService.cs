@@ -1,6 +1,6 @@
 using Vortex.Domain.Dto;
 
-namespace Vortex.Infrastructure.Interfaces;
+namespace Vortex.Application.Interfaces;
 
 public interface IAuthService
 {

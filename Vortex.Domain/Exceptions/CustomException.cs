@@ -1,4 +1,4 @@
-namespace Vortex.Infrastructure.CustomException;
+namespace Vortex.Domain.Exceptions;
 
 // 400 Bad Request
 public class BadRequestException(string message) : Exception(message);

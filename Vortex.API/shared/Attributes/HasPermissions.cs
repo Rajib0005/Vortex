@@ -34,17 +34,17 @@ public class HasPermissions : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
-        var projectAccessClaim = user.Claims.FirstOrDefault(c => c.Type == "projectAccess")?.Value;
+        var projectAccessClaim = user.Claims.FirstOrDefault(c => c.Type == "project_access")?.Value;
         if (string.IsNullOrEmpty(projectAccessClaim))
         {
             context.Result = new ForbidResult();
             return;
         }
 
-        List<ProjectRoleDto>? accessEntries;
+        List<ProjectRolePermissionDto>? accessEntries;
         try
         {
-            accessEntries = JsonSerializer.Deserialize<List<ProjectRoleDto>>(projectAccessClaim);
+            accessEntries = JsonSerializer.Deserialize<List<ProjectRolePermissionDto>>(projectAccessClaim);
         }
         catch
         {
@@ -55,7 +55,7 @@ public class HasPermissions : Attribute, IAsyncAuthorizationFilter
         var projectAccess = accessEntries?
             .FirstOrDefault(p => p.ProjectId.ToString().Equals(projectIdFromRoute, StringComparison.OrdinalIgnoreCase));
 
-        if (projectAccess == null || !projectAccess.Roles.Contains(_requiredRole, StringComparer.OrdinalIgnoreCase))
+        if (projectAccess == null || !projectAccess.Permission.Contains(_requiredRole, StringComparer.OrdinalIgnoreCase))
         {
             context.Result = new ForbidResult();
             return;
