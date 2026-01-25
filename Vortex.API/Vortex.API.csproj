@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
@@ -23,6 +24,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Vortex.Application\Vortex.Application.csproj" />
       <ProjectReference Include="..\Vortex.Infrastructure\Vortex.Infrastructure.csproj" />
+      <ProjectReference Include="..\Vortex.Contracts\Vortex.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

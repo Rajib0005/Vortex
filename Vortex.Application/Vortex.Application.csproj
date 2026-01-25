@@ -7,19 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Vortex.Domain\Vortex.Domain.csproj" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <ProjectReference Include="..\Vortex.Domain\Vortex.Domain.csproj" />
+        <ProjectReference Include="..\Vortex.Contracts\Vortex.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
       <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.1" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
-        <HintPath>..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\9.0.7\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
-      </Reference>
     </ItemGroup>
 
 </Project>

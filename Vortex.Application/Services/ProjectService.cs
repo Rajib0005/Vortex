@@ -5,6 +5,8 @@ using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Domain.Exceptions;
+using Vortex.Contracts;
+using MassTransit;
 
 namespace Vortex.Application.Services;
 
@@ -14,14 +16,18 @@ public class ProjectService : IProjectService
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
     private readonly IUserService _userService;
 
+    private readonly IBus _bus;
+
     public ProjectService(
         IGenericRepository<ProjectEntity> projectRepository,
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
+        IBus bus,
         IUserService userService)
     {
         _projectRepository = projectRepository;
         _userProjectRoleRepository = userProjectRoleRepository;
         _userService = userService;
+        _bus = bus;
     }
     public async Task UpsertProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
     {
@@ -59,6 +65,13 @@ public class ProjectService : IProjectService
                 CanDelete = isAdmin,
                 CanMark = isAdmin || isManager
             }).ToListAsync(cancellation);
+            var notification = new NotificationRequested(
+            currentUser.Email.ToString() ?? "",
+            "Welcome to Vortex!",
+            "Get All the projects successfully",
+            NotificationType.Email
+        );
+        await _bus.Publish(notification, cancellation);
         return projects;
     }
 

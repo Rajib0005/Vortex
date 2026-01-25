@@ -3,10 +3,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using BCrypt.Net;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Vortex.Application.Interfaces;
+using Vortex.Contracts;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
@@ -23,19 +25,21 @@ public class AuthService() : IAuthService
     private readonly IGenericRepository<ProjectEntity> _projectRepository;
     private readonly IUserService _userService;
     private readonly IConfiguration _config;
+    private readonly IBus _bus;
 
     public AuthService(
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IGenericRepository<UserEntity> userRepository,
         IGenericRepository<ProjectEntity> projectRepository,
         IUserService userService,
-        IConfiguration config) : this()
+        IConfiguration config, IBus bus) : this()
     {
         _userProjectRoleRepository = userProjectRoleRepository;
         _userRepository = userRepository;
         _userService = userService;
         _projectRepository = projectRepository;
         _config = config;
+        _bus = bus;
     }
 
     public async Task<string> GenerateTokenAsync(Guid userId, string email, CancellationToken cancellationToken)
