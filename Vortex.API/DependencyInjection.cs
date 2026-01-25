@@ -1,3 +1,4 @@
+using MassTransit;
 using Vortex.Application;
 using Vortex.Infrastructure;
 
@@ -10,6 +11,20 @@ public static class DependencyInjection
     {
         services.AddApplicationDependency();
         services.AddInfrastructureDependency(configuration);
+
+        services.AddMassTransit(busConfigurator =>
+        {
+            busConfigurator.UsingRabbitMq((context, configurator) =>
+            {
+                configurator.Host("localhost", "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+            });
+        });
+        
+
         return services;
     }
 }

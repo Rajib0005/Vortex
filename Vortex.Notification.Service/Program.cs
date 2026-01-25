@@ -13,8 +13,8 @@ builder.Services.AddMassTransit(busConfigurator =>
     {
         configurator.Host("localhost", "/", h =>
         {
-            h.Username("admin");
-            h.Password("admin");
+            h.Username("guest");
+            h.Password("guest");
         });
 
         configurator.ReceiveEndpoint("notification-requests", e =>
