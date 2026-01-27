@@ -16,10 +16,15 @@ public static class DependencyInjection
         {
             busConfigurator.UsingRabbitMq((context, configurator) =>
             {
-                configurator.Host("localhost", "/", h =>
+                var rabbitMqConfig = configuration.GetSection("RabbitMq");
+                var host = rabbitMqConfig["Host"];
+                var username = rabbitMqConfig["Username"];
+                var password = rabbitMqConfig["Password"];
+
+                configurator.Host(host, "/", h =>
                 {
-                    h.Username("guest");
-                    h.Password("guest");
+                    h.Username(username);
+                    h.Password(password);
                 });
             });
         });
