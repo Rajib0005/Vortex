@@ -12,8 +12,8 @@ using Vortex.Infrastructure.Data;
 namespace Vortex.Infrastructure.Migrations
 {
     [DbContext(typeof(VortexDbContext))]
-    [Migration("20251214161751_Migrarion-Reset")]
-    partial class MigrarionReset
+    [Migration("20260205182658_inital-migartion")]
+    partial class initalmigartion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -162,6 +162,12 @@ namespace Vortex.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -179,6 +185,12 @@ namespace Vortex.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("UserEntityId")
                         .HasColumnType("uuid");
 
@@ -187,6 +199,21 @@ namespace Vortex.Infrastructure.Migrations
                     b.HasIndex("UserEntityId");
 
                     b.ToTable("tbl_project_master", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("7c7e06ed-80f7-4505-87e2-5191d13db645"),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            Description = "This is a default project",
+                            IsActive = true,
+                            IsDeleted = false,
+                            ProjectKey = "Default",
+                            ProjectName = "Default",
+                            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = new Guid("00000000-0000-0000-0000-000000000000")
+                        });
                 });
 
             modelBuilder.Entity("Vortex.Domain.Entities.RoleEntity", b =>
@@ -239,6 +266,12 @@ namespace Vortex.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -263,6 +296,12 @@ namespace Vortex.Infrastructure.Migrations
 
                     b.Property<string>("TaskName")
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -297,7 +336,7 @@ namespace Vortex.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("FisrtName")
+                    b.Property<string>("FirstName")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
@@ -333,6 +372,9 @@ namespace Vortex.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
@@ -357,6 +399,8 @@ namespace Vortex.Infrastructure.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("tbl_user_master", (string)null);
                 });
@@ -461,6 +505,17 @@ namespace Vortex.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Vortex.Domain.Entities.UserEntity", b =>
+                {
+                    b.HasOne("Vortex.Domain.Entities.RoleEntity", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Vortex.Domain.Entities.UserProjectRole", b =>

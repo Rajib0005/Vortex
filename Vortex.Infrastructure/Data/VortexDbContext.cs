@@ -26,6 +26,19 @@ namespace Vortex.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.ToTable("tbl_project_master");
+                entity.HasData(new ProjectEntity
+                {
+                    Id = Constants.DefaultProjectId,
+                    ProjectName = "Default",
+                    ProjectKey = "Default",
+                    Description = "This is a default project",
+                    IsActive = true,
+                    IsDeleted = false,
+                    CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    CreatedBy = Guid.Empty,
+                    UpdatedBy = Guid.Empty
+                });
             });
 
             builder.Entity<AttachmentEntity>(entity =>

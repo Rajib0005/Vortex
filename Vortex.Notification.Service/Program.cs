@@ -8,6 +8,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddMassTransit(busConfigurator =>
 {
     busConfigurator.AddConsumer<NotificationRequestedConsumer>();
+    busConfigurator.AddConsumer<SendInvitationEmailConsumer>();
 
     busConfigurator.UsingRabbitMq((context, configurator) =>
     {
@@ -25,6 +26,11 @@ builder.Services.AddMassTransit(busConfigurator =>
         configurator.ReceiveEndpoint("notification-requests", e =>
         {
             e.ConfigureConsumer<NotificationRequestedConsumer>(context);
+        });
+
+        configurator.ReceiveEndpoint("send-invitation-email-queue", e =>
+        {
+            e.ConfigureConsumer<SendInvitationEmailConsumer>(context);
         });
     });
 });

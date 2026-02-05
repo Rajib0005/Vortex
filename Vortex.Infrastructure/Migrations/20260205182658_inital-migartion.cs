@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Vortex.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class MigrarionReset : Migration
+    public partial class initalmigartion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -29,11 +29,32 @@ namespace Vortex.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AspNetRoleClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetRoleClaims_tbl_role_master_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "tbl_role_master",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "tbl_user_master",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FisrtName = table.Column<string>(type: "text", nullable: true),
+                    FirstName = table.Column<string>(type: "text", nullable: true),
                     LastName = table.Column<string>(type: "text", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -41,6 +62,7 @@ namespace Vortex.Infrastructure.Migrations
                     UpdatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     ProfilePicture = table.Column<string>(type: "text", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -59,23 +81,8 @@ namespace Vortex.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_tbl_user_master", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AspNetRoleClaims",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AspNetRoleClaims_tbl_role_master_RoleId",
+                        name: "FK_tbl_user_master_tbl_role_master_RoleId",
                         column: x => x.RoleId,
                         principalTable: "tbl_role_master",
                         principalColumn: "Id",
@@ -177,6 +184,10 @@ namespace Vortex.Infrastructure.Migrations
                     ProjectKey = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     UserEntityId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
@@ -201,6 +212,10 @@ namespace Vortex.Infrastructure.Migrations
                     Level = table.Column<string>(type: "text", nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     ProjectId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -266,6 +281,11 @@ namespace Vortex.Infrastructure.Migrations
                 });
 
             migrationBuilder.InsertData(
+                table: "tbl_project_master",
+                columns: new[] { "Id", "CreatedAt", "CreatedBy", "Description", "IsActive", "IsDeleted", "ProjectKey", "ProjectName", "UpdatedAt", "UpdatedBy", "UserEntityId" },
+                values: new object[] { new Guid("7c7e06ed-80f7-4505-87e2-5191d13db645"), new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("00000000-0000-0000-0000-000000000000"), "This is a default project", true, false, "Default", "Default", new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("00000000-0000-0000-0000-000000000000"), null });
+
+            migrationBuilder.InsertData(
                 table: "tbl_role_master",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
@@ -322,6 +342,11 @@ namespace Vortex.Infrastructure.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
+                name: "IX_tbl_user_master_RoleId",
+                table: "tbl_user_master",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "tbl_user_master",
                 column: "NormalizedUserName",
@@ -371,13 +396,13 @@ namespace Vortex.Infrastructure.Migrations
                 name: "tbl_task_master");
 
             migrationBuilder.DropTable(
-                name: "tbl_role_master");
-
-            migrationBuilder.DropTable(
                 name: "tbl_project_master");
 
             migrationBuilder.DropTable(
                 name: "tbl_user_master");
+
+            migrationBuilder.DropTable(
+                name: "tbl_role_master");
         }
     }
 }
