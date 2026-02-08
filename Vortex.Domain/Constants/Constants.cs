@@ -9,5 +9,5 @@ public static class Constants
 
     public static readonly Guid DefaultProjectId = new Guid("7c7e06ed-80f7-4505-87e2-5191d13db645");
 
-    public static readonly string DefaultUserPassword = "hello@123";
+    public static readonly string DefaultUserPassword = "Hello@123";
 }

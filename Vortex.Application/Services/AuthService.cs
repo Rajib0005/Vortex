@@ -49,6 +49,7 @@ public class AuthService(
             Email = userModel.Email,
             EmailConfirmed = true,
             IsActive = true,
+            RoleId = Constants.AdminRoleId,
             CreatedOn = DateTime.UtcNow
         };
         var result = await _userManager.CreateAsync(newUser, userModel.Password);
@@ -115,7 +116,7 @@ public class AuthService(
         foreach (var userDto in usersToInvite)
         {
             UserEntity userEntity;
-            var existingInactiveUser = existingInactiveUsers.FirstOrDefault(u => u.Email == userDto.UserEmail.ToLower());
+            var existingInactiveUser = existingInactiveUsers.FirstOrDefault(u => string.Equals(u.Email, userDto.UserEmail.ToLower()));
 
             if (existingInactiveUser != null)
             {
@@ -133,11 +134,16 @@ public class AuthService(
                     UserName = userDto.UserEmail.ToLower(),
                     IsActive = true,
                     EmailConfirmed = false,
+                    RoleId = Constants.AdminRoleId,
                     CreatedOn = DateTime.UtcNow
                 };
-               await  _userManager.CreateAsync(userEntity, Constants.DefaultUserPassword);
+                var result = await _userManager.CreateAsync(userEntity, Constants.DefaultUserPassword);
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    throw new InternalServerException($"Failed to create user: {errors}");
+                }
             }
-            
             var secretKey = _config["JwtSettings:InvitationSecretKey"] ?? throw new InvalidOperationException("JWT secret key not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var invitationToken = GenerateTokenAsync(userEntity.Id, userEntity.Email ?? string.Empty, key, cancellationToken);
@@ -155,7 +161,7 @@ public class AuthService(
             });
         }
         
-        if (userProjectRolesToAdd.Any())
+        if (userProjectRolesToAdd.Count > 0)
         {
             await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
             await _userProjectRoleRepository.SaveChangesAsync();

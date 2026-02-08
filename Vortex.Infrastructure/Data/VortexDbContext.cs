@@ -11,6 +11,7 @@ namespace Vortex.Infrastructure.Data
         public DbSet<ProjectEntity> Projects { get; set; }
         public DbSet<TaskEntity> Tasks { get; set; }
         public DbSet<UserProjectRole>  UserProjectRoles { get; set; }
+        public DbSet<RoleEntity> Roles { get; set; }
         public DbSet<AttachmentEntity> Attachments { get; set; }
         
         protected override void OnModelCreating(ModelBuilder builder)
@@ -49,6 +50,10 @@ namespace Vortex.Infrastructure.Data
 
             // Identity tables
             builder.Entity<UserEntity>().ToTable("tbl_user_master");
+            // Explicit FK mapping between User and Role
+            builder.Entity<UserEntity>().HasOne(u => u.Role)
+                .WithMany()
+                .HasForeignKey(u => u.RoleId);
             builder.Entity<RoleEntity>().ToTable("tbl_role_master").HasData([
                 new RoleEntity
                 {

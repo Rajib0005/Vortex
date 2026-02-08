@@ -12,8 +12,8 @@ using Vortex.Infrastructure.Data;
 namespace Vortex.Infrastructure.Migrations
 {
     [DbContext(typeof(VortexDbContext))]
-    [Migration("20260205182658_inital-migartion")]
-    partial class initalmigartion
+    [Migration("20260207140028_update-role-user-relation")]
+    partial class updateroleuserrelation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

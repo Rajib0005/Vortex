@@ -47,22 +47,38 @@ public class UserService: IUserService
     public async Task<IList<UserDetailsDto>> GetAllUsers(CancellationToken cancellationToken = default)
     {
         var users = await _userRepository.GetByCondition(x => x.IsActive)
-            .Include(u => u.Role)
-            .AsSingleQuery()
             .AsNoTracking()
-            .Select(u => new UserDetailsDto(
-                u.Id,
-                u.FullName ?? string.Empty,
-                u.Email ?? string.Empty,
-                u.UserName ?? string.Empty,
-                u.IsActive,
-                u.EmailConfirmed,
-                u.Role.Id,
-                u.Role.Name ?? string.Empty
-            ))
             .ToListAsync(cancellationToken);
 
-        return users;
+        var userIds = users.Select(u => u.Id).ToList();
+
+        var userRoles = await _userProjectRoleRepository.GetByCondition(upr => userIds.Contains(upr.UserId))
+            .Include(upr => upr.Role)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var userDetailsList = new List<UserDetailsDto>();
+
+        foreach (var user in users)
+        {
+            var primaryRole = userRoles.FirstOrDefault(ur => ur.UserId == user.Id)?.Role;
+
+            if (primaryRole != null)
+            {
+                userDetailsList.Add(new UserDetailsDto(
+                    user.Id,
+                    user.FullName ?? string.Empty,
+                    user.Email ?? string.Empty,
+                    user.UserName ?? string.Empty,
+                    user.IsActive,
+                    user.EmailConfirmed,
+                    primaryRole.Id,
+                    primaryRole.Name ?? string.Empty
+                ));
+            }
+        }
+
+        return userDetailsList;
     }
 
     public async Task<UserDetailsDto> GetUserDetailsByIdAsync(CancellationToken cancellationToken = default)
