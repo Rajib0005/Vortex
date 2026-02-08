@@ -6,8 +6,8 @@ public class AttachmentEntity
     public required string FileName { get; set; }
     public required  string FilePath { get; set; }
     public required  string ContentType { get; set; }
-    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime? CreatedAt { get; set; }
     public Guid CreatedBy { get; set; }
-    public DateTime UpdatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
     public Guid UpdatedBy { get; set; }
 }
