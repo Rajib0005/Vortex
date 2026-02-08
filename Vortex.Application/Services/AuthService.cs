@@ -15,8 +15,7 @@ using Vortex.Domain.Exceptions;
 using Vortex.Domain.Repositories;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 using Microsoft.AspNetCore.Identity;
-using Vortex.Contracts;
-using Vortex.Application.Utils;
+using Vortex.Contracts.Models;
 
 namespace Vortex.Application.Services;
 
@@ -111,7 +110,7 @@ public class AuthService(
             .ToListAsync(cancellationToken);
 
         var userProjectRolesToAdd = new List<UserProjectRole>();
-        var emailsToSend = new List<SendInvitationEmail>();
+        var notificationsToSend = new List<NotificationContract>();
 
         foreach (var userDto in usersToInvite)
         {
@@ -146,11 +145,21 @@ public class AuthService(
             }
             var secretKey = _config["JwtSettings:InvitationSecretKey"] ?? throw new InvalidOperationException("JWT secret key not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var invitationToken = GenerateTokenAsync(userEntity.Id, userEntity.Email ?? string.Empty, key, cancellationToken);
+            var invitationToken = await GenerateTokenAsync(userEntity.Id, userEntity.Email ?? string.Empty, key, cancellationToken);
             
             var invitationLink = $"{UrlConstants.BaseUrl}/set-password?token={invitationToken}";
 
-            emailsToSend.Add(new SendInvitationEmail(userEntity.Email ?? string.Empty, invitationLink));
+            notificationsToSend.Add(new NotificationContract(
+                NotificationId: Guid.NewGuid(),
+                Destination: userEntity.Email ?? string.Empty,
+                TemplateId: "InvitationEmail", // Matches the HTML file name without extension
+                TemplateData: new Dictionary<string, string>
+                {
+                    { "Subject", "You have been invited to Vortex" },
+                    { "InvitationLink", invitationLink }
+                },
+                Timestamp: DateTime.UtcNow
+            ));
 
             userProjectRolesToAdd.Add(new UserProjectRole
             {
@@ -167,8 +176,10 @@ public class AuthService(
             await _userProjectRoleRepository.SaveChangesAsync();
         }
         
-        // publish email notification
-        await SendInvitationEmail(emailsToSend, cancellationToken);
+        if (notificationsToSend.Any())
+        {
+            await _bus.PublishBatch(notificationsToSend, cancellationToken);
+        }
     }
 
     public async Task SetPassword(SetPasswordDto setPasswordDto)
@@ -278,18 +289,6 @@ public class AuthService(
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private async Task SendInvitationEmail(List<SendInvitationEmail> emailsToSend, CancellationToken cancellationToken)
-    {
-        var notifications = emailsToSend.Select(emailData => new NotificationRequested(
-            emailData.ToEmail,
-            "Invitation to Project",
-            emailData.ToHtmlBody(EmailTemplate.Invitation),
-            NotificationType.Email
-        ));
-
-        await _bus.PublishBatch(notifications, cancellationToken);
     }
 
     #endregion

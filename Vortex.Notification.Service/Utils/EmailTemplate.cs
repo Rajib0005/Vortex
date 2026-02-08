@@ -1,4 +1,4 @@
-namespace Vortex.Application.Utils;
+namespace Vortex.Notification.Service.Utils;
 
 public enum EmailTemplate
 {

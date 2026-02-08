@@ -1,14 +1,17 @@
 using MassTransit;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Vortex.Notification.Service.Consumers;
+using Vortex.Notification.Service.Interfaces;
+using Vortex.Notification.Service.Providers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// Register services
+builder.Services.AddScoped<IEmailProvider, LogEmailProvider>();
+
+#region MassTransit and Rabbitmq
 builder.Services.AddMassTransit(busConfigurator =>
 {
-    busConfigurator.AddConsumer<NotificationRequestedConsumer>();
-    busConfigurator.AddConsumer<SendInvitationEmailConsumer>();
+    busConfigurator.AddConsumer<NotificationConsumer>();
 
     busConfigurator.UsingRabbitMq((context, configurator) =>
     {
@@ -23,17 +26,14 @@ builder.Services.AddMassTransit(busConfigurator =>
             h.Password(password);
         });
 
-        configurator.ReceiveEndpoint("notification-requests", e =>
+        configurator.ReceiveEndpoint("notifications", e =>
         {
-            e.ConfigureConsumer<NotificationRequestedConsumer>(context);
-        });
-
-        configurator.ReceiveEndpoint("send-invitation-email-queue", e =>
-        {
-            e.ConfigureConsumer<SendInvitationEmailConsumer>(context);
+            e.ConfigureConsumer<NotificationConsumer>(context);
         });
     });
 });
+
+#endregion
 
 var host = builder.Build();
 host.Run();
