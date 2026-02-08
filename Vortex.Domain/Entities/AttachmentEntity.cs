@@ -6,4 +6,8 @@ public class AttachmentEntity
     public required string FileName { get; set; }
     public required  string FilePath { get; set; }
     public required  string ContentType { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public Guid CreatedBy { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public Guid UpdatedBy { get; set; }
 }

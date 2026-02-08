@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vortex.Domain.Dto;
 using Vortex.Application.Interfaces;
+using Vortex.Application.Dtos;
 
 namespace Vortex.API.Controllers;
 
@@ -17,22 +18,6 @@ public class AuthController : ControllerBase
     {
         _logger = logger;
         _authService = authService;
-    }
-
-    [HttpGet("token")]
-    public async Task<ActionResult> GetToken(Guid userId, string email, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var token = await _authService.GenerateTokenAsync(userId, email, cancellationToken);
-            return Ok(BaseResponse<string>.SuccessResponse(token));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, ex.Message);
-            return Unauthorized(BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
-        }
-
     }
     
     [HttpPost("login")]
@@ -63,6 +48,39 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, BaseResponse<Exception>.FailureResponse("Unauthorized", [ex.Message]));
+        }
+    }
+    
+    [HttpPost]
+    [Route("invite")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> InviteUserDetails([FromBody] List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _authService.InviteUserAsync(inviteUserDto, cancellationToken);
+            return Ok(BaseResponse<string>.SuccessResponse("Invite users successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Invite users failed: {ex.Message}");
+            return StatusCode(500, BaseResponse<string>.FailureResponse("An error occured while inviting users", [ex.Message]));
+        }
+    }
+
+    [HttpPost("set-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> SetPassword([FromBody] SetPasswordDto setPasswordDto)
+    {
+        try
+        {
+            await _authService.SetPassword(setPasswordDto);
+            return Ok(BaseResponse<string>.SuccessResponse("Password set successfully."));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return BadRequest(BaseResponse<string>.FailureResponse("Failed to set password.", [ex.Message]));
         }
     }
 }

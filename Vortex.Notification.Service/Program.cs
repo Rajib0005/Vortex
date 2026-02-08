@@ -8,18 +8,29 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddMassTransit(busConfigurator =>
 {
     busConfigurator.AddConsumer<NotificationRequestedConsumer>();
+    busConfigurator.AddConsumer<SendInvitationEmailConsumer>();
 
     busConfigurator.UsingRabbitMq((context, configurator) =>
     {
-        configurator.Host("localhost", "/", h =>
+        var rabbitMqConfig = builder.Configuration.GetSection("RabbitMq");
+        var host = rabbitMqConfig["Host"];
+        var username = rabbitMqConfig["Username"];
+        var password = rabbitMqConfig["Password"];
+
+        configurator.Host(host, "/", h =>
         {
-            h.Username("guest");
-            h.Password("guest");
+            h.Username(username);
+            h.Password(password);
         });
 
         configurator.ReceiveEndpoint("notification-requests", e =>
         {
             e.ConfigureConsumer<NotificationRequestedConsumer>(context);
+        });
+
+        configurator.ReceiveEndpoint("send-invitation-email-queue", e =>
+        {
+            e.ConfigureConsumer<SendInvitationEmailConsumer>(context);
         });
     });
 });

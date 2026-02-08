@@ -14,3 +14,6 @@ public class ForbiddenException(string message) : Exception(message);
 
 // 409 Conflict (e.g., Duplicate email)
 public class ConflictException(string message) : Exception(message);
+
+// 500 Internal Server Error
+public class InternalServerException(string message) : Exception(message);

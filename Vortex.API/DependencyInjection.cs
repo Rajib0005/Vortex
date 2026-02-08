@@ -12,14 +12,20 @@ public static class DependencyInjection
         services.AddApplicationDependency();
         services.AddInfrastructureDependency(configuration);
 
-        services.AddMassTransit(busConfigurator =>
+        var rabbitMqSettings = configuration.GetSection("RabbitMq");
+
+        var host = rabbitMqSettings["Host"] ?? throw new InvalidOperationException("RabbitMQ host not found");
+        var username = rabbitMqSettings["Username"] ?? throw new InvalidOperationException("RabbitMQ username not found");
+        var password = rabbitMqSettings["Password"] ?? throw new InvalidOperationException("RabbitMQ password not found");
+
+        services.AddMassTransit(x =>
         {
-            busConfigurator.UsingRabbitMq((context, configurator) =>
+            x.UsingRabbitMq((context, cfg) =>
             {
-                configurator.Host("localhost", "/", h =>
+                cfg.Host(host,"/", h =>
                 {
-                    h.Username("guest");
-                    h.Password("guest");
+                    h.Username(username);
+                    h.Password(password);
                 });
             });
         });

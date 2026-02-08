@@ -39,28 +39,11 @@ public class UserController: ControllerBase
     }
     
     [HttpGet]
-    [Route("get-invite-users")]
+    [Route("users")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> GetInviteUserDetails(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllUserDetails(CancellationToken cancellationToken)
     {
-        var inviteUserDetailsModel = await _userService.GetInviteUserDetails(cancellationToken);
-        return Ok(BaseResponse<ProjectRoleDto>.SuccessResponse(inviteUserDetailsModel));
-    }
-    
-    [HttpPost]
-    [Route("invite-users")]
-    [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> InviteUserDetails([FromBody] List<InviteUserDto> inviteUserDto, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _userService.InviteUserAsync(inviteUserDto, cancellationToken);
-            return Ok(BaseResponse<string>.SuccessResponse("Invite users successfully"));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Invite users failed: {ex.Message}");
-            return StatusCode(500, BaseResponse<string>.FailureResponse("An error occured while inviting users", [ex.Message]));
-        }
+        var users = await _userService.GetAllUsers(cancellationToken);
+        return Ok(BaseResponse<IList<UserDetailsDto>>.SuccessResponse(data: users));
     }
 }

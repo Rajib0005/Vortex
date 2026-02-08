@@ -29,10 +29,10 @@ public class ProjectService : IProjectService
         _userService = userService;
         _bus = bus;
     }
-    public async Task UpsertProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
+    public async Task UpsertProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation, Guid? createdBy = null)
     {
         await (projectModel.ProjectId is null
-            ? CreateProjectAsync(projectModel, cancellation)
+            ? CreateProjectAsync(projectModel, cancellation, createdBy)
             : UpdateProjectAsync(projectModel, cancellation));
     }
 
@@ -65,13 +65,6 @@ public class ProjectService : IProjectService
                 CanDelete = isAdmin,
                 CanMark = isAdmin || isManager
             }).ToListAsync(cancellation);
-            var notification = new NotificationRequested(
-            currentUser.Email.ToString() ?? "",
-            "Welcome to Vortex!",
-            "Get All the projects successfully",
-            NotificationType.Email
-        );
-        await _bus.Publish(notification, cancellation);
         return projects;
     }
 
@@ -95,20 +88,20 @@ public class ProjectService : IProjectService
 
     #region private methods
 
-    private async Task CreateProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
+    private async Task CreateProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation, Guid? createdBy = null)
     {
         var existingProject = await _projectRepository.GetByCondition(project => project.ProjectName == projectModel.ProjectName
                 && project.ProjectKey == projectModel.ProjectKey)
             .FirstOrDefaultAsync(p => p.IsActive && !p.IsDeleted, cancellation);
 
         if (existingProject is not null) throw new ConflictException("Project is already existed");
-        var currentUserId = _userService.GetCurrentUserId();
-        var currentUserDetails = await _userService.GetUserDetailsByIdAsync(cancellation);
+        var currentUserId = createdBy ?? _userService.GetCurrentUserId();
+        var currentUserDetails = await _userService.GetUserDetailsByIdAsync(currentUserId, cancellation);
         var projectEntity = new ProjectEntity
         {
-            Id = Guid.NewGuid(),
-            ProjectName = projectModel.ProjectName,
-            ProjectKey = projectModel.ProjectKey,
+            Id = projectModel.ProjectId ?? Guid.NewGuid(),
+            ProjectName = projectModel.ProjectName ?? string.Empty,
+            ProjectKey = projectModel.ProjectKey ?? string.Empty,
             Description = projectModel.ProjectDescription,
             IsActive = projectModel.IsActive ?? true,
             IsDeleted = false,
