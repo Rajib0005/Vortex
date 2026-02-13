@@ -9,8 +9,12 @@ public static class EmailBodyParser
 {
     public static string Parse(string templateName, Dictionary<string, string> data)
     {
-        var templatePath = Path.Combine(AppContext.BaseDirectory, "EmailTemplates", $"{templateName}.html");
-
+        var basePath = Path.Combine(AppContext.BaseDirectory, "EmailTemplates");
+        var templatePath = Path.GetFullPath(Path.Combine(basePath, $"{templateName}.html"));
+            if (!templatePath.StartsWith(Path.GetFullPath(basePath), StringComparison.OrdinalIgnoreCase))
+            {
+            throw new ArgumentException("Invalid template name.");
+            }
         if (!File.Exists(templatePath))
         {
             throw new FileNotFoundException($"Email template not found at {templatePath}");
@@ -18,7 +22,7 @@ public static class EmailBodyParser
 
         var body = File.ReadAllText(templatePath);
 
-        foreach (var entry in data)
+        foreach (var entry in data ?? new Dictionary<string, string>())
         {
             body = body.Replace($"{{{{{entry.Key}}}}}", WebUtility.HtmlEncode(entry.Value));
         }
