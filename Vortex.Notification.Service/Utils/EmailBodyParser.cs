@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 
 namespace Vortex.Notification.Service.Utils;
 
@@ -19,7 +20,7 @@ public static class EmailBodyParser
 
         foreach (var entry in data)
         {
-            body = body.Replace($"{{{{{entry.Key}}}}}", entry.Value);
+            body = body.Replace($"{{{{{entry.Key}}}}}", WebUtility.HtmlEncode(entry.Value));
         }
 
         return body;

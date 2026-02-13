@@ -33,6 +33,13 @@ builder.Services.AddMassTransit(busConfigurator =>
 
         configurator.ReceiveEndpoint("notifications", e =>
         {
+            // Retry Policy
+            e.UseMessageRetry(r => 
+                r.Incremental(
+                    3, 
+                    TimeSpan.FromSeconds(2), 
+                    TimeSpan.FromSeconds(5))
+                );
             e.ConfigureConsumer<NotificationConsumer>(context);
         });
     });

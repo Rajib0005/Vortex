@@ -24,7 +24,7 @@ namespace Vortex.Notification.Service.Consumers
             try
             {
                 var subject = "A message from Vortex";
-                if(notification.TemplateData.TryGetValue("Subject", out var subj))
+                if(notification.TemplateData?.TryGetValue("Subject", out var subj) == true)
                 {
                     subject = subj;
                 }
