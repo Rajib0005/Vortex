@@ -1,9 +1,10 @@
 using System.Threading.Tasks;
+using Vortex.Contracts.Emails;
 
 namespace Vortex.Notification.Service.Interfaces
 {
     public interface IEmailProvider
     {
-        Task SendEmailAsync(string recipient, string subject, string body);
+        Task SendEmailAsync(GenericEmail email);
     }
 }

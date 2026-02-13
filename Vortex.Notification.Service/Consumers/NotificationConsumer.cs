@@ -1,33 +1,23 @@
-using System.Threading.Tasks;
+using Vortex.Contracts.Emails;
 using MassTransit;
-using Microsoft.Extensions.Logging;
 using Vortex.Contracts.Models;
 using Vortex.Notification.Service.Interfaces;
 using Vortex.Notification.Service.Utils;
 
 namespace Vortex.Notification.Service.Consumers
 {
-    public class NotificationConsumer : IConsumer<NotificationContract>
+    public class NotificationConsumer(
+        ILogger<NotificationConsumer> logger,
+        IEmailProvider emailProvider) : IConsumer<NotificationContract>
     {
-        private readonly ILogger<NotificationConsumer> _logger;
-        private readonly IEmailProvider _emailProvider;
-
-        public NotificationConsumer(
-            ILogger<NotificationConsumer> logger,
-            IEmailProvider emailProvider)
-        {
-            _logger = logger;
-            _emailProvider = emailProvider;
-        }
-
         public async Task Consume(ConsumeContext<NotificationContract> context)
         {
             var notification = context.Message;
-            _logger.LogInformation("Processing notification {NotificationId} for {Destination}", notification.NotificationId, notification.Destination);
+            logger.LogInformation("Processing notification {NotificationId} for {Destination}", notification.NotificationId, notification.Destination);
 
             if (string.IsNullOrEmpty(notification.Destination))
             {
-                _logger.LogWarning("Notification {NotificationId} has no Destination, cannot proceed.", notification.NotificationId);
+                logger.LogWarning("Notification {NotificationId} has no Destination, cannot proceed.", notification.NotificationId);
                 return;
             }
 
@@ -40,12 +30,12 @@ namespace Vortex.Notification.Service.Consumers
                 }
 
                 var body = EmailBodyParser.Parse(notification.TemplateId, notification.TemplateData);
-                await _emailProvider.SendEmailAsync(notification.Destination, subject, body);
-                _logger.LogInformation("Successfully processed email notification for {Destination}", notification.Destination);
+                await emailProvider.SendEmailAsync(new GenericEmail { To = notification.Destination, Subject = subject, Body = body });
+                logger.LogInformation("Successfully processed email notification for {Destination}", notification.Destination);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to process email notification for {Destination}", notification.Destination);
+                logger.LogError(ex, "Failed to process email notification for {Destination}", notification.Destination);
             }
         }
     }

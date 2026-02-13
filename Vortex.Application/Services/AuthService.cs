@@ -142,6 +142,18 @@ public class AuthService(
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                     throw new InternalServerException($"Failed to create user: {errors}");
                 }
+                userProjectRolesToAdd.Add(new UserProjectRole
+                {
+                    User = userEntity,
+                    UserId = userEntity.Id,
+                    ProjectId = userDto.ProjectId,
+                    RoleId = userDto.RoleId,
+                });
+                if (userProjectRolesToAdd.Count > 0)
+                {
+                    await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
+                    await _userProjectRoleRepository.SaveChangesAsync();
+                }
             }
             var secretKey = _config["JwtSettings:InvitationSecretKey"] ?? throw new InvalidOperationException("JWT secret key not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -160,20 +172,6 @@ public class AuthService(
                 },
                 Timestamp: DateTime.UtcNow
             ));
-
-            userProjectRolesToAdd.Add(new UserProjectRole
-            {
-                User = userEntity,
-                UserId = userEntity.Id,
-                ProjectId = userDto.ProjectId,
-                RoleId = userDto.RoleId,
-            });
-        }
-        
-        if (userProjectRolesToAdd.Count > 0)
-        {
-            await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
-            await _userProjectRoleRepository.SaveChangesAsync();
         }
         
         if (notificationsToSend.Any())

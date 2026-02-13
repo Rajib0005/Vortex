@@ -1,12 +1,17 @@
 using MassTransit;
 using Vortex.Notification.Service.Consumers;
 using Vortex.Notification.Service.Interfaces;
+using Vortex.Notification.Service.Models;
 using Vortex.Notification.Service.Providers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 // Register services
-builder.Services.AddScoped<IEmailProvider, LogEmailProvider>();
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+
+#region Add Smtp Config
+builder.Services.AddSingleton<IEmailProvider, SmtpEmailProvider>();
+#endregion
 
 #region MassTransit and Rabbitmq
 builder.Services.AddMassTransit(busConfigurator =>
