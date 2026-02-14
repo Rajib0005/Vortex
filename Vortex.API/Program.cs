@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using Vortex.API;
 using Vortex.Domain.Entities;
 using Vortex.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -106,6 +107,14 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+#region Apply Migation
+    
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<VortexDbContext>();
+    context.Database.Migrate(); // This applies any pending migrations
+}
+#endregion
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

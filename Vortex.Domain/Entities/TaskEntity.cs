@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
+using Vortex.Domain.Common;
+
 namespace Vortex.Domain.Entities;
 
-public class TaskEntity
+public class TaskEntity : IAuditable, ISupportParent, IProjectRelated
 {
     public Guid Id { get; set; }
     public string? TaskName { get; set; }
@@ -18,5 +20,11 @@ public class TaskEntity
     public Guid CreatedBy { get; set; }
     public Guid UpdatedBy { get; set; }
     public virtual ICollection<AttachmentEntity> Attachments { get; set; } = new List<AttachmentEntity>();
-    public virtual ProjectEntity Project { get; set; }
+    public Guid ProjectId { get; set; }
+    public virtual ProjectEntity Project { get; set; } = null!;
+
+    public (string ParentType, Guid? ParentId) GetParentInfo()
+    {
+        return ("Project", ProjectId);
+    }
 }

@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
+using Vortex.Domain.Common;
+
 namespace Vortex.Domain.Entities;
 
-public class ProjectEntity
+public class ProjectEntity : IAuditable, IProjectRelated
 {
     [Key]
     public required Guid Id { get; set; }
@@ -16,4 +18,7 @@ public class ProjectEntity
     public Guid CreatedBy { get; set; }
     public Guid UpdatedBy { get; set; }
     public virtual ICollection<TaskEntity> Tasks { get; set; } = new List<TaskEntity>();
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public Guid ProjectId => Id;
 }

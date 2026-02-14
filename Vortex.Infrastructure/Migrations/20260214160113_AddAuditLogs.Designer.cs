@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Vortex.Infrastructure.Data;
@@ -11,9 +12,11 @@ using Vortex.Infrastructure.Data;
 namespace Vortex.Infrastructure.Migrations
 {
     [DbContext(typeof(VortexDbContext))]
-    partial class VortexDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260214160113_AddAuditLogs")]
+    partial class AddAuditLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -203,9 +206,6 @@ namespace Vortex.Infrastructure.Migrations
                     b.Property<string>("ParentEntityType")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("ProjectId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -220,48 +220,6 @@ namespace Vortex.Infrastructure.Migrations
                     b.HasIndex("ParentEntityId");
 
                     b.ToTable("tbl_audit_logs", (string)null);
-                });
-
-            modelBuilder.Entity("Vortex.Domain.Entities.CommentEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ParentCommentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TaskId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentCommentId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("TaskId");
-
-                    b.ToTable("tbl_comment_master", (string)null);
                 });
 
             modelBuilder.Entity("Vortex.Domain.Entities.ProjectEntity", b =>
@@ -597,32 +555,6 @@ namespace Vortex.Infrastructure.Migrations
                         .HasForeignKey("TaskEntityId");
                 });
 
-            modelBuilder.Entity("Vortex.Domain.Entities.CommentEntity", b =>
-                {
-                    b.HasOne("Vortex.Domain.Entities.CommentEntity", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Vortex.Domain.Entities.ProjectEntity", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Vortex.Domain.Entities.TaskEntity", "Task")
-                        .WithMany()
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ParentComment");
-
-                    b.Navigation("Project");
-
-                    b.Navigation("Task");
-                });
-
             modelBuilder.Entity("Vortex.Domain.Entities.ProjectEntity", b =>
                 {
                     b.HasOne("Vortex.Domain.Entities.UserEntity", null)
@@ -675,11 +607,6 @@ namespace Vortex.Infrastructure.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Vortex.Domain.Entities.CommentEntity", b =>
-                {
-                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("Vortex.Domain.Entities.ProjectEntity", b =>
