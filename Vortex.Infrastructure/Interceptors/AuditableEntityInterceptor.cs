@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Common;
@@ -51,7 +50,7 @@ public class AuditableEntityInterceptor(
 
             // Get Primary Key (assuming single generic Id)
             var idProperty = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "Id");
-            if (idProperty != null && idProperty.CurrentValue != null)
+            if (idProperty is { CurrentValue: not null })
             {
                  if (Guid.TryParse(idProperty.CurrentValue.ToString(), out var guidId))
                  {
