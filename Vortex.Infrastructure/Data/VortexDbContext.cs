@@ -13,6 +13,8 @@ namespace Vortex.Infrastructure.Data
         public DbSet<UserProjectRole>  UserProjectRoles { get; set; }
         public DbSet<RoleEntity> Roles { get; set; }
         public DbSet<AttachmentEntity> Attachments { get; set; }
+        public DbSet<CommentEntity> Comments { get; set; }        
+        public DbSet<AuditLog> AuditLogs { get; set; }
         
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -21,6 +23,9 @@ namespace Vortex.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.ToTable("tbl_task_master");
+                entity.HasOne(t => t.Project)
+                    .WithMany(p => p.Tasks)
+                    .HasForeignKey(t => t.ProjectId);
             });
 
             builder.Entity<ProjectEntity>(entity =>
@@ -80,6 +85,37 @@ namespace Vortex.Infrastructure.Data
                 entity.ToTable("tbl_user_project_master");
             });
             builder.Entity<AttachmentEntity>().ToTable("tbl_attachment_master");
+            
+            builder.Entity<AuditLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tbl_audit_logs");
+                entity.HasIndex(e => e.EntityId);
+                entity.HasIndex(e => e.ParentEntityId);
+                entity.HasIndex(e => e.CorrelationId);
+                entity.HasIndex(e => e.DateTime);
+            });
+
+            builder.Entity<CommentEntity>(entity =>
+            {
+                entity.ToTable("tbl_comment_master");
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(c => c.Task)
+                    .WithMany()
+                    .HasForeignKey(c => c.TaskId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.Project)
+                    .WithMany()
+                    .HasForeignKey(c => c.ProjectId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.ParentComment)
+                    .WithMany(c => c.Replies)
+                    .HasForeignKey(c => c.ParentCommentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
         
     }

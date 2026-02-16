@@ -13,7 +13,7 @@ public static class EmailBodyParser
         var templatePath = Path.GetFullPath(Path.Combine(basePath, $"{templateName}.html"));
             if (!templatePath.StartsWith(Path.GetFullPath(basePath), StringComparison.OrdinalIgnoreCase))
             {
-            throw new ArgumentException("Invalid template name.");
+                throw new ArgumentException("Invalid template name.");
             }
         if (!File.Exists(templatePath))
         {
