@@ -1,15 +1,14 @@
 using Vortex.Domain;
-using Vortex.Domain.Entities;
+using TaskStatus = Vortex.Domain.TaskStatus;
 
 namespace Vortex.Application.Dtos;
 
 public class UpsertTaskDto
 {
-    public Guid? Id { get; set; }
     public required string TaskName { get; set; }
     public string? Description { get; set; }
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
-    public Vortex.Domain.TaskStatus Status { get; set; } = Vortex.Domain.TaskStatus.Todo;
+    public TaskStatus Status { get; set; } = TaskStatus.Todo;
     public TaskType TaskType { get; set; } = TaskType.Task;
     public int? StoryPoints { get; set; }
     

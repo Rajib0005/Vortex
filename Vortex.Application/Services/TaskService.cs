@@ -47,11 +47,9 @@ public class TaskService(
         return await GetTaskAsync(task.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created task");
     }
 
-    public async Task<TaskDto> UpdateTaskAsync(UpsertTaskDto dto, CancellationToken cancellationToken = default)
+    public async Task<TaskDto> UpdateTaskAsync(Guid taskId, UpsertTaskDto dto, CancellationToken cancellationToken = default)
     {
-        if (dto.Id == null) throw new Exception("Task Id is required for update");
-        
-        var task = await _taskRepository.GetByIdAsync(dto.Id.Value) 
+        var task = await _taskRepository.GetByIdAsync(taskId) 
             ?? throw new BadRequestException("Task not found");
 
         _mapper.Map(dto, task);
