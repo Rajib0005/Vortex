@@ -26,6 +26,9 @@ public class CommentEntity : IAuditable, ISupportParent, IProjectRelated
     public DateTime UpdatedAt { get; set; }
     public Guid UpdatedBy { get; set; }
 
+    public bool IsEdited { get; set; } = false;
+    public DateTime? EditedAt { get; set; }
+
     public (string ParentType, Guid? ParentId) GetParentInfo()
     {
         return ("Task", TaskId);
