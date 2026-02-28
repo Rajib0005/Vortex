@@ -15,15 +15,15 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateTask([FromBody] UpsertTaskDto dto, CancellationToken ct)
     {
-        await _taskService.CreateTaskAsync(dto, ct);
-        return Ok(BaseResponse<string>.SuccessResponse("Task created successfully"));
+        var result = await _taskService.CreateTaskAsync(dto, ct);
+        return Ok(BaseResponse<TaskDto>.SuccessResponse(result, "Task created successfully"));
     }
 
     [HttpPut]
     public async Task<IActionResult> UpdateTask([FromBody] UpsertTaskDto dto, CancellationToken ct)
     {
-        await _taskService.UpdateTaskAsync(dto, ct);
-        return Ok(BaseResponse<string>.SuccessResponse("Task updated successfully"));
+        var result = await _taskService.UpdateTaskAsync(dto, ct);
+        return Ok(BaseResponse<TaskDto>.SuccessResponse(result, "Task updated successfully"));
     }
 
     [HttpDelete("{taskId}")]

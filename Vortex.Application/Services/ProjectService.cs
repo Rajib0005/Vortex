@@ -5,8 +5,9 @@ using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Domain.Exceptions;
-using Vortex.Contracts;
 using MassTransit;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace Vortex.Application.Services;
 
@@ -15,6 +16,7 @@ public class ProjectService : IProjectService
     private readonly IGenericRepository<ProjectEntity> _projectRepository;
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
     private readonly IUserService _userService;
+    private readonly IMapper _mapper;
 
     private readonly IBus _bus;
 
@@ -22,12 +24,14 @@ public class ProjectService : IProjectService
         IGenericRepository<ProjectEntity> projectRepository,
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IBus bus,
-        IUserService userService)
+        IUserService userService,
+        IMapper mapper)
     {
         _projectRepository = projectRepository;
         _userProjectRoleRepository = userProjectRoleRepository;
         _userService = userService;
         _bus = bus;
+        _mapper = mapper;
     }
     public async Task UpsertProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation, Guid? createdBy = null)
     {
@@ -73,15 +77,9 @@ public class ProjectService : IProjectService
         var project = await _projectRepository.GetByIdAsync(projectId);
         if(project is null) throw new BadRequestException("Project not found");
         
-        var projectDetails = new ProjectCardsDto
-        {
-            Title = project.ProjectName,
-            Description = project.Description,
-            IsAcvtive = project.IsActive,
-            NumberOfCompletedTasks = 0,
-            NumberOfTotalTasks = 0,
-            StartDate = project.CreatedAt,
-        };
+        var projectDetails = _mapper.Map<ProjectCardsDto>(project);
+        projectDetails.NumberOfCompletedTasks = 0;
+        projectDetails.NumberOfTotalTasks = 0;
 
         return projectDetails;
     }
@@ -136,11 +134,6 @@ public class ProjectService : IProjectService
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
         await _projectRepository.SaveChangesAsync();
-    }
-
-    private void ToProjectModelConvertion(ProjectEntity project)
-    {
-        // YET to be implemneted
     }
 
     #endregion
