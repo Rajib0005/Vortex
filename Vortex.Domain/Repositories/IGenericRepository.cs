@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Vortex.Domain.Repositories;
 
@@ -13,5 +14,6 @@ public interface IGenericRepository<TEntity> where TEntity : class
     void DeleteAsync(TEntity entity);
     void DeleteRangeAsync(IEnumerable<TEntity> entities);
     Task<int> SaveChangesAsync();
+    Task<IDbContextTransaction> BeginTransactionAsync();
 }
 

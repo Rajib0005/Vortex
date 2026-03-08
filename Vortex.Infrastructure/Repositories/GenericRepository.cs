@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Vortex.Domain.Repositories;
 using Vortex.Infrastructure.Data;
 
@@ -54,5 +55,10 @@ public class GenericRepository<TEntity>(VortexDbContext _dbContext) : IGenericRe
     public async Task<int> SaveChangesAsync()
     {
         return await  _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        return await _dbContext.Database.BeginTransactionAsync();
     }
 }

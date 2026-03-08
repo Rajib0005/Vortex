@@ -134,12 +134,23 @@ public class ProjectService : IProjectService
             RoleId = currentUserDetails.RoleId,
             ProjectId = projectEntity.Id,
         };
-        await _projectRepository.AddAsync(projectEntity);
-        var notificationsToPublish = await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
-        await _projectRepository.SaveChangesAsync();
-        
-        if (notificationsToPublish.Count != 0)
-            await _bus.PublishBatch(notificationsToPublish, cancellation);
+        await _userProjectRoleRepository.AddAsync(projectUserRole);
+        await using var transaction = await _projectRepository.BeginTransactionAsync();
+        try
+        {
+            await _projectRepository.AddAsync(projectEntity);
+            var notificationsToPublish = await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
+            await _projectRepository.SaveChangesAsync();
+            await transaction.CommitAsync(cancellation);
+            
+            if (notificationsToPublish.Count != 0)
+                await _bus.PublishBatch(notificationsToPublish, cancellation);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellation);
+            throw;
+        }
     }
 
     private async Task UpdateProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
@@ -158,11 +169,21 @@ public class ProjectService : IProjectService
         existingProject.UpdatedAt = DateTime.UtcNow;
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
-        var notificationsToPublish = await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
-        await _projectRepository.SaveChangesAsync();
+        await using var transaction = await _projectRepository.BeginTransactionAsync();
+        try
+        {
+            var notificationsToPublish = await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
+            await _projectRepository.SaveChangesAsync();
+            await transaction.CommitAsync(cancellation);
 
-        if (notificationsToPublish.Count != 0)
-            await _bus.PublishBatch(notificationsToPublish, cancellation);
+            if (notificationsToPublish.Count != 0)
+                await _bus.PublishBatch(notificationsToPublish, cancellation);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellation);
+            throw;
+        }
     }
 
     private async Task<List<NotificationContract>> InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
@@ -189,7 +210,7 @@ public class ProjectService : IProjectService
                 try
                 {
                     await _userProjectRoleRepository.AddAsync(userProjectRole);
-                    await _userProjectRoleRepository.SaveChangesAsync();
+                    // SaveChangesAsync is removed here so it's managed by the caller's transaction
                 }
                 catch (DbUpdateException)
                 {
