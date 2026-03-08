@@ -6,4 +6,5 @@ public enum TaskType
     Story = 1,
     Task = 2,
     SubTask = 3,
+    Bug  = 4
 }

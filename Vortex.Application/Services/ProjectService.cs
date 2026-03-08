@@ -6,10 +6,11 @@ using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Domain.Exceptions;
-using Vortex.Contracts;
 using MassTransit;
 using MassTransit.Initializers;
 using Vortex.Contracts.Models;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace Vortex.Application.Services;
 
@@ -18,6 +19,7 @@ public class ProjectService : IProjectService
     private readonly IGenericRepository<ProjectEntity> _projectRepository;
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository;
     private readonly IUserService _userService;
+    private readonly IMapper _mapper;
 
     private readonly IBus _bus;
 
@@ -25,12 +27,14 @@ public class ProjectService : IProjectService
         IGenericRepository<ProjectEntity> projectRepository,
         IGenericRepository<UserProjectRole> userProjectRoleRepository,
         IBus bus,
-        IUserService userService)
+        IUserService userService,
+        IMapper mapper)
     {
         _projectRepository = projectRepository;
         _userProjectRoleRepository = userProjectRoleRepository;
         _userService = userService;
         _bus = bus;
+        _mapper = mapper;
     }
     public async Task UpsertProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation, Guid? createdBy = null)
     {
@@ -86,7 +90,11 @@ public class ProjectService : IProjectService
         var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
         var isManager = currentUser.RoleId == Constants.ManagerRoleId;
 
-        var projectDetails = ToProjectCardsDtoConversion(project, isAdmin, isManager);
+        var projectDetails = _mapper.Map<ProjectCardsDto>(project);
+        projectDetails.NumberOfCompletedTasks = 0;
+        projectDetails.NumberOfTotalTasks = 0;
+        projectDetails.CanDelete = isAdmin;
+        projectDetails.CanMark = isAdmin || isManager;
 
         return projectDetails;
     }
@@ -191,25 +199,5 @@ public class ProjectService : IProjectService
             }
         }
     }
-
-    private ProjectCardsDto ToProjectCardsDtoConversion(ProjectEntity project, bool isAdmin = false, bool isManager = false)
-    {
-        return new ProjectCardsDto
-        {
-            Title = project.ProjectName,
-            Description = project.Description,
-            ProjectKey = project.ProjectKey,
-            IsAcvtive = project.IsActive,
-            NumberOfCompletedTasks = 0,
-            NumberOfTotalTasks = 0,
-            StartDate = project.CreatedAt,
-            Priority = project.Priority,
-            EstimatedDeadline = project.EstimatedDeadline,
-            Domain = project.Domain,
-            CanDelete = isAdmin,
-            CanMark = isAdmin || isManager
-        };
-    }
-
     #endregion
 }

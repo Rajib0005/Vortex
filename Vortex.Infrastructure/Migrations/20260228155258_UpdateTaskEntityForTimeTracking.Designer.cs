@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Vortex.Infrastructure.Data;
@@ -12,9 +13,11 @@ using Vortex.Infrastructure.Data;
 namespace Vortex.Infrastructure.Migrations
 {
     [DbContext(typeof(VortexDbContext))]
-    partial class VortexDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228155258_UpdateTaskEntityForTimeTracking")]
+    partial class UpdateTaskEntityForTimeTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -291,12 +294,6 @@ namespace Vortex.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<string>("Domain")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("EstimatedDeadline")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -306,8 +303,6 @@ namespace Vortex.Infrastructure.Migrations
                     b.Property<int>("LastTaskSequence")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
                     b.Property<string>("ProjectKey")
                         .IsRequired()
                         .HasColumnType("text");
@@ -338,11 +333,9 @@ namespace Vortex.Infrastructure.Migrations
                             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
                             Description = "This is a default project",
-                            Domain = "Development",
                             IsActive = true,
                             IsDeleted = false,
                             LastTaskSequence = 0,
-                            Priority = 1,
                             ProjectKey = "Default",
                             ProjectName = "Default",
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),

@@ -16,6 +16,7 @@ using Vortex.Domain.Repositories;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 using Microsoft.AspNetCore.Identity;
 using Vortex.Contracts.Models;
+using AutoMapper;
 
 namespace Vortex.Application.Services;
 
@@ -26,7 +27,8 @@ public class AuthService(
     UserManager<UserEntity> userManager,
     IBus bus,
     IProjectService projectService,
-    IConfiguration config) : IAuthService
+    IConfiguration config,
+    IMapper mapper) : IAuthService
 {
     private readonly IGenericRepository<UserProjectRole> _userProjectRoleRepository = userProjectRoleRepository;
     private readonly IGenericRepository<UserEntity> _userRepository = userRepository;
@@ -35,22 +37,14 @@ public class AuthService(
     private readonly UserManager<UserEntity> _userManager = userManager;
     private readonly IBus _bus = bus;
     private readonly IProjectService _projectService = projectService;
+    private readonly IMapper _mapper = mapper;
 
     public async Task<string> SingUpAsync(AuthDto userModel, CancellationToken cancellationToken)
     {
         var isExistingUser = await _userService.IsExistingUser(userModel.Email, cancellationToken);
         if (isExistingUser) throw new ConflictException("User already exists");
 
-        var newUser = new UserEntity
-        {
-            Id = Guid.NewGuid(),
-            UserName = userModel.Email,
-            Email = userModel.Email,
-            EmailConfirmed = true,
-            IsActive = true,
-            RoleId = Constants.AdminRoleId,
-            CreatedOn = DateTime.UtcNow
-        };
+        var newUser = _mapper.Map<UserEntity>(userModel);
         var result = await _userManager.CreateAsync(newUser, userModel.Password);
 
         if (!result.Succeeded)
@@ -63,7 +57,6 @@ public class AuthService(
             UserId = newUser.Id,
             RoleId = Constants.AdminRoleId,
             ProjectId = Constants.DefaultProjectId,
-
         };
 
         await _userProjectRoleRepository.AddAsync(projectUserRole);
