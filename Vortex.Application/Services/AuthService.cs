@@ -143,11 +143,6 @@ public class AuthService(
                     ProjectId = userDto.ProjectId,
                     RoleId = userDto.RoleId,
                 });
-                if (userProjectRolesToAdd.Count > 0)
-                {
-                    await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
-                    await _userProjectRoleRepository.SaveChangesAsync();
-                }
             }
             var secretKey = _config["JwtSettings:InvitationSecretKey"] ?? throw new InvalidOperationException("JWT secret key not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -166,6 +161,12 @@ public class AuthService(
                 },
                 Timestamp: DateTime.UtcNow
             ));
+        }
+
+        if (userProjectRolesToAdd.Count > 0)
+        {
+            await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
+            await _userProjectRoleRepository.SaveChangesAsync();
         }
         
         if (notificationsToSend.Any())

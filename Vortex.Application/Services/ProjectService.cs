@@ -135,8 +135,11 @@ public class ProjectService : IProjectService
             ProjectId = projectEntity.Id,
         };
         await _projectRepository.AddAsync(projectEntity);
-        await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
+        var notificationsToPublish = await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
         await _projectRepository.SaveChangesAsync();
+        
+        if (notificationsToPublish.Count != 0)
+            await _bus.PublishBatch(notificationsToPublish, cancellation);
     }
 
     private async Task UpdateProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
@@ -155,13 +158,17 @@ public class ProjectService : IProjectService
         existingProject.UpdatedAt = DateTime.UtcNow;
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
-        await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
+        var notificationsToPublish = await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
         await _projectRepository.SaveChangesAsync();
+
+        if (notificationsToPublish.Count != 0)
+            await _bus.PublishBatch(notificationsToPublish, cancellation);
     }
 
-    private async Task InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
+    private async Task<List<NotificationContract>> InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
     {
-        if (inviteUsers == null || inviteUsers.Count == 0) return;
+        var notificationsToPublish = new List<NotificationContract>();
+        if (inviteUsers == null || inviteUsers.Count == 0) return notificationsToPublish;
         
         foreach (var user in inviteUsers)
         {
@@ -178,27 +185,38 @@ public class ProjectService : IProjectService
                     RoleId = Constants.MemberRoleId,
                     ProjectId = projectId,
                 };
-                await _userProjectRoleRepository.AddAsync(userProjectRole);
-                var invitationLink = $"{UrlConstants.BaseUrl}/projects";
-                var notificationsToSend = new List<NotificationContract>
-                {
-                    new NotificationContract(
-                        NotificationId: Guid.NewGuid(),
-                        Destination: user.UserEmail ?? string.Empty,
-                        TemplateId: "InvitationEmail", // Matches the HTML file name without extension
-                        TemplateData: new Dictionary<string, string>
-                        {
-                            { "Subject", "You have been invited to Vortex" },
-                            { "InvitationLink", invitationLink }
-                        },
-                        Timestamp: DateTime.UtcNow
-                    )
-                };
                 
-                if (notificationsToSend.Count != 0)
-                    await _bus.PublishBatch(notificationsToSend, cancellation);
+                try
+                {
+                    await _userProjectRoleRepository.AddAsync(userProjectRole);
+                    await _userProjectRoleRepository.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // Ignore duplicate key or constraint violation for concurrent inserts
+                    continue;
+                }
+
+                // Resolve the recipient email from the authoritative user record
+                var userDetails = await _userService.GetUserDetailsByIdAsync(user.UserId, cancellation);
+                var resolvedEmail = userDetails.Email ?? string.Empty;
+
+                var invitationLink = $"{UrlConstants.BaseUrl}/projects";
+                
+                notificationsToPublish.Add(new NotificationContract(
+                    NotificationId: Guid.NewGuid(),
+                    Destination: resolvedEmail,
+                    TemplateId: "InvitationEmail", // Matches the HTML file name without extension
+                    TemplateData: new Dictionary<string, string>
+                    {
+                        { "Subject", "You have been invited to Vortex" },
+                        { "InvitationLink", invitationLink }
+                    },
+                    Timestamp: DateTime.UtcNow
+                ));
             }
         }
+        return notificationsToPublish;
     }
     #endregion
 }
