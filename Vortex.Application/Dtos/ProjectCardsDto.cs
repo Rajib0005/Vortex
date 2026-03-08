@@ -4,6 +4,7 @@ namespace Vortex.Application.Dtos;
 
 public class ProjectCardsDto
 {
+    public Guid ProjectId { get; set; }
     public virtual string? Title {get; set;}
     public virtual string? Description {get; set;}
     public virtual string? ProjectKey {get; set;}

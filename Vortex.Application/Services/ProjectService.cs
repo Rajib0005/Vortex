@@ -65,6 +65,7 @@ public class ProjectService : IProjectService
             .OrderByDescending((x)=> x.Project.CreatedAt)
             .Select(upr => new ProjectCardsDto
             {
+                ProjectId = upr.Project.Id,
                 Title = upr.Project.ProjectName,
                 Description = upr.Project.Description,
                 ProjectKey =  upr.Project.ProjectKey,

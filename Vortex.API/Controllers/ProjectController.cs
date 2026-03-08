@@ -68,7 +68,7 @@ public class ProjectController : Controller
         }
     }
 
-    [HttpPost("delete-project")]
+    [HttpDelete("delete-project/{projectId}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteProject(Guid projectId, CancellationToken cancellation)
     {

@@ -127,7 +127,7 @@ public class AuthService(
                     UserName = userDto.UserEmail.ToLower(),
                     IsActive = true,
                     EmailConfirmed = false,
-                    RoleId = Constants.AdminRoleId,
+                    RoleId = Constants.MemberRoleId,
                     CreatedOn = DateTime.UtcNow
                 };
                 var result = await _userManager.CreateAsync(userEntity, Constants.DefaultUserPassword);
