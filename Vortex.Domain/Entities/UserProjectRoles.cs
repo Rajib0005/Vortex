@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using Vortex.Domain.Constants;
+using Microsoft.EntityFrameworkCore;
 
 namespace Vortex.Domain.Entities;
 
+[Index(nameof(ProjectId), nameof(UserId), IsUnique = true)]
 public class UserProjectRole
 {
     [Key]

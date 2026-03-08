@@ -18,6 +18,9 @@ public class ProjectEntity : IAuditable, IProjectRelated
     public Guid CreatedBy { get; set; }
     public Guid UpdatedBy { get; set; }
     public int LastTaskSequence { get; set; } = 0;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
+    public DateTime? EstimatedDeadline { get; set; }
+    public string? Domain { get; set; }
     public virtual ICollection<TaskEntity> Tasks { get; set; } = new List<TaskEntity>();
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]

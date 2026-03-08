@@ -3,6 +3,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
@@ -60,5 +61,38 @@ public class UserService(
         if (userDetails is null) throw new NotFoundException("User not found");
 
         return userDetails;
+    }
+
+    public async Task<List<UserToInviteInProject>> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    {
+        var usersWillBeInvited = new List<UserToInviteInProject>();
+        var usersQuery = _userRepository.GetByCondition(x => true);
+
+        if (projectId is not null)
+        {
+            usersQuery = usersQuery.Where(x => x.Projects.Any(y => y.ProjectId == projectId));
+        }
+
+        var users = await usersQuery.Take(20).ToListAsync(cancellation);
+
+        var userOptions = users.Select(user => new UserToInviteInProject
+        {
+            UserId = user.Id,
+            UserEmail = user.Email ?? string.Empty,
+        });
+        
+        usersWillBeInvited.AddRange(userOptions);
+
+        return usersWillBeInvited;
+    }
+
+    public async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
+    {
+        var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user =>
+            userEmails.Contains(user.User.Email!) && user.ProjectId.HasValue && projectIds.Contains(user.ProjectId.Value))
+            .Select(x => x.User.Email)
+            .ToListAsync(cancellationToken);
+
+        return usersAlreadyInSameProject.Where(x => x is not null).Select(x => x!).ToList();
     }
 }

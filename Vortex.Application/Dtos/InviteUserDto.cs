@@ -6,3 +6,9 @@ public class InviteUserDto
     public Guid ProjectId { get; set; }
     public Guid RoleId { get; set; }
 }
+
+public class UserToInviteInProject
+{
+    public string UserEmail { get; set; }
+    public Guid UserId { get; set; }
+}

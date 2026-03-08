@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
+using Vortex.Domain;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Domain.Exceptions;
 using MassTransit;
+using MassTransit.Initializers;
+using Vortex.Contracts.Models;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 
@@ -57,15 +60,22 @@ public class ProjectService : IProjectService
         var currentUser = await _userService.GetUserDetailsByIdAsync(cancellation);
         var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
         var isManager = currentUser.RoleId == Constants.ManagerRoleId;
-        var projects = await _userProjectRoleRepository.GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
+        var projects = await _userProjectRoleRepository
+            .GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
+            .OrderByDescending((x)=> x.Project.CreatedAt)
             .Select(upr => new ProjectCardsDto
             {
+                ProjectId = upr.Project.Id,
                 Title = upr.Project.ProjectName,
                 Description = upr.Project.Description,
+                ProjectKey =  upr.Project.ProjectKey,
                 IsAcvtive = upr.Project.IsActive,
                 NumberOfCompletedTasks = 0,
                 NumberOfTotalTasks = 0,
                 StartDate = upr.Project.CreatedAt,
+                Priority = upr.Project.Priority,
+                EstimatedDeadline = upr.Project.EstimatedDeadline,
+                Domain = upr.Project.Domain,
                 CanDelete = isAdmin,
                 CanMark = isAdmin || isManager
             }).ToListAsync(cancellation);
@@ -77,9 +87,15 @@ public class ProjectService : IProjectService
         var project = await _projectRepository.GetByIdAsync(projectId);
         if(project is null) throw new BadRequestException("Project not found");
         
+        var currentUser = await _userService.GetUserDetailsByIdAsync();
+        var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
+        var isManager = currentUser.RoleId == Constants.ManagerRoleId;
+
         var projectDetails = _mapper.Map<ProjectCardsDto>(project);
         projectDetails.NumberOfCompletedTasks = 0;
         projectDetails.NumberOfTotalTasks = 0;
+        projectDetails.CanDelete = isAdmin;
+        projectDetails.CanMark = isAdmin || isManager;
 
         return projectDetails;
     }
@@ -102,6 +118,9 @@ public class ProjectService : IProjectService
             ProjectKey = projectModel.ProjectKey ?? string.Empty,
             Description = projectModel.ProjectDescription,
             IsActive = projectModel.IsActive ?? true,
+            Priority = projectModel.Priority ?? ProjectPriority.Medium,
+            EstimatedDeadline = projectModel.EstimatedDeadline,
+            Domain = projectModel.Domain,
             IsDeleted = false,
             CreatedBy = currentUserId,
             CreatedAt = DateTime.UtcNow,
@@ -115,9 +134,23 @@ public class ProjectService : IProjectService
             RoleId = currentUserDetails.RoleId,
             ProjectId = projectEntity.Id,
         };
-        await _projectRepository.AddAsync(projectEntity);
         await _userProjectRoleRepository.AddAsync(projectUserRole);
-        await _projectRepository.SaveChangesAsync();
+        await using var transaction = await _projectRepository.BeginTransactionAsync();
+        try
+        {
+            await _projectRepository.AddAsync(projectEntity);
+            var notificationsToPublish = await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
+            await _projectRepository.SaveChangesAsync();
+            await transaction.CommitAsync(cancellation);
+            
+            if (notificationsToPublish.Count != 0)
+                await _bus.PublishBatch(notificationsToPublish, cancellation);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellation);
+            throw;
+        }
     }
 
     private async Task UpdateProjectAsync(UpsertProjectDto projectModel, CancellationToken cancellation)
@@ -129,12 +162,82 @@ public class ProjectService : IProjectService
         existingProject.ProjectKey = projectModel.ProjectKey ?? existingProject.ProjectKey;
         existingProject.Description = projectModel.ProjectDescription ?? existingProject.Description;
         existingProject.IsActive = projectModel.IsActive ?? existingProject.IsActive;
+        existingProject.Priority = projectModel.Priority ?? existingProject.Priority;
+        existingProject.EstimatedDeadline = projectModel.EstimatedDeadline ?? existingProject.EstimatedDeadline;
+        existingProject.Domain = projectModel.Domain ?? existingProject.Domain;
         existingProject.IsDeleted = false;
         existingProject.UpdatedAt = DateTime.UtcNow;
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
-        await _projectRepository.SaveChangesAsync();
+        await using var transaction = await _projectRepository.BeginTransactionAsync();
+        try
+        {
+            var notificationsToPublish = await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
+            await _projectRepository.SaveChangesAsync();
+            await transaction.CommitAsync(cancellation);
+
+            if (notificationsToPublish.Count != 0)
+                await _bus.PublishBatch(notificationsToPublish, cancellation);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellation);
+            throw;
+        }
     }
 
+    private async Task<List<NotificationContract>> InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
+    {
+        var notificationsToPublish = new List<NotificationContract>();
+        if (inviteUsers == null || inviteUsers.Count == 0) return notificationsToPublish;
+        
+        foreach (var user in inviteUsers)
+        {
+            var isAlreadyInvited = await _userProjectRoleRepository
+                .GetByCondition(upr => upr.ProjectId == projectId && upr.UserId == user.UserId)
+                .AnyAsync(cancellation);
+
+            if (!isAlreadyInvited)
+            {
+                var userProjectRole = new UserProjectRole
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.UserId,
+                    RoleId = Constants.MemberRoleId,
+                    ProjectId = projectId,
+                };
+                
+                try
+                {
+                    await _userProjectRoleRepository.AddAsync(userProjectRole);
+                    // SaveChangesAsync is removed here so it's managed by the caller's transaction
+                }
+                catch (DbUpdateException)
+                {
+                    // Ignore duplicate key or constraint violation for concurrent inserts
+                    continue;
+                }
+
+                // Resolve the recipient email from the authoritative user record
+                var userDetails = await _userService.GetUserDetailsByIdAsync(user.UserId, cancellation);
+                var resolvedEmail = userDetails.Email ?? string.Empty;
+
+                var invitationLink = $"{UrlConstants.BaseUrl}/projects";
+                
+                notificationsToPublish.Add(new NotificationContract(
+                    NotificationId: Guid.NewGuid(),
+                    Destination: resolvedEmail,
+                    TemplateId: "InvitationEmail", // Matches the HTML file name without extension
+                    TemplateData: new Dictionary<string, string>
+                    {
+                        { "Subject", "You have been invited to Vortex" },
+                        { "InvitationLink", invitationLink }
+                    },
+                    Timestamp: DateTime.UtcNow
+                ));
+            }
+        }
+        return notificationsToPublish;
+    }
     #endregion
 }

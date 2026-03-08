@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Vortex.Infrastructure.Data;
@@ -12,9 +13,11 @@ using Vortex.Infrastructure.Data;
 namespace Vortex.Infrastructure.Migrations
 {
     [DbContext(typeof(VortexDbContext))]
-    partial class VortexDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260307153410_UpdateProjectEntityProperties")]
+    partial class UpdateProjectEntityProperties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -343,7 +346,7 @@ namespace Vortex.Infrastructure.Migrations
                             IsActive = true,
                             IsDeleted = false,
                             LastTaskSequence = 0,
-                            Priority = 1,
+                            Priority = 2,
                             ProjectKey = "Default",
                             ProjectName = "Default",
                             UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -599,12 +602,11 @@ namespace Vortex.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProjectId");
+
                     b.HasIndex("RoleId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("ProjectId", "UserId")
-                        .IsUnique();
 
                     b.ToTable("tbl_user_project_master", (string)null);
                 });

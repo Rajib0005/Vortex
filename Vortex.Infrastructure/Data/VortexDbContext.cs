@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Vortex.Domain;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 
@@ -43,7 +44,9 @@ namespace Vortex.Infrastructure.Data
                     CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     CreatedBy = Guid.Empty,
-                    UpdatedBy = Guid.Empty
+                    UpdatedBy = Guid.Empty,
+                    Priority = ProjectPriority.Medium,
+                    Domain = "Development"
                 });
             });
 

@@ -95,7 +95,8 @@ public class AuthService(
             .ToListAsync(cancellationToken);
 
         // Filter out users who are new or not active in the assigned projects
-        var usersToInvite = inviteUserDto.Where(x => !alreadyActiveUsersInProjects.Contains(x.UserEmail.ToLower())).ToList();
+        var usersToInvite = inviteUserDto.Where(x => 
+            !alreadyActiveUsersInProjects.Contains(x.UserEmail.ToLower())).ToList();
 
         // Check for users who exist but are inactive and need a new invitation
         var existingInactiveUsers = await _userRepository
@@ -126,7 +127,7 @@ public class AuthService(
                     UserName = userDto.UserEmail.ToLower(),
                     IsActive = true,
                     EmailConfirmed = false,
-                    RoleId = Constants.AdminRoleId,
+                    RoleId = Constants.MemberRoleId,
                     CreatedOn = DateTime.UtcNow
                 };
                 var result = await _userManager.CreateAsync(userEntity, Constants.DefaultUserPassword);
@@ -142,11 +143,6 @@ public class AuthService(
                     ProjectId = userDto.ProjectId,
                     RoleId = userDto.RoleId,
                 });
-                if (userProjectRolesToAdd.Count > 0)
-                {
-                    await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
-                    await _userProjectRoleRepository.SaveChangesAsync();
-                }
             }
             var secretKey = _config["JwtSettings:InvitationSecretKey"] ?? throw new InvalidOperationException("JWT secret key not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -165,6 +161,12 @@ public class AuthService(
                 },
                 Timestamp: DateTime.UtcNow
             ));
+        }
+
+        if (userProjectRolesToAdd.Count > 0)
+        {
+            await _userProjectRoleRepository.AddRangeAsync(userProjectRolesToAdd);
+            await _userProjectRoleRepository.SaveChangesAsync();
         }
         
         if (notificationsToSend.Any())
