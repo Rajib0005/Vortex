@@ -1,12 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
+using Vortex.Domain;
 using Vortex.Domain.Constants;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Repositories;
 using Vortex.Domain.Exceptions;
 using Vortex.Contracts;
 using MassTransit;
+using MassTransit.Initializers;
+using Vortex.Contracts.Models;
 
 namespace Vortex.Application.Services;
 
@@ -53,15 +56,21 @@ public class ProjectService : IProjectService
         var currentUser = await _userService.GetUserDetailsByIdAsync(cancellation);
         var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
         var isManager = currentUser.RoleId == Constants.ManagerRoleId;
-        var projects = await _userProjectRoleRepository.GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
+        var projects = await _userProjectRoleRepository
+            .GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
+            .OrderByDescending((x)=> x.Project.CreatedAt)
             .Select(upr => new ProjectCardsDto
             {
                 Title = upr.Project.ProjectName,
                 Description = upr.Project.Description,
+                ProjectKey =  upr.Project.ProjectKey,
                 IsAcvtive = upr.Project.IsActive,
                 NumberOfCompletedTasks = 0,
                 NumberOfTotalTasks = 0,
                 StartDate = upr.Project.CreatedAt,
+                Priority = upr.Project.Priority,
+                EstimatedDeadline = upr.Project.EstimatedDeadline,
+                Domain = upr.Project.Domain,
                 CanDelete = isAdmin,
                 CanMark = isAdmin || isManager
             }).ToListAsync(cancellation);
@@ -73,15 +82,11 @@ public class ProjectService : IProjectService
         var project = await _projectRepository.GetByIdAsync(projectId);
         if(project is null) throw new BadRequestException("Project not found");
         
-        var projectDetails = new ProjectCardsDto
-        {
-            Title = project.ProjectName,
-            Description = project.Description,
-            IsAcvtive = project.IsActive,
-            NumberOfCompletedTasks = 0,
-            NumberOfTotalTasks = 0,
-            StartDate = project.CreatedAt,
-        };
+        var currentUser = await _userService.GetUserDetailsByIdAsync();
+        var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
+        var isManager = currentUser.RoleId == Constants.ManagerRoleId;
+
+        var projectDetails = ToProjectCardsDtoConversion(project, isAdmin, isManager);
 
         return projectDetails;
     }
@@ -104,6 +109,9 @@ public class ProjectService : IProjectService
             ProjectKey = projectModel.ProjectKey ?? string.Empty,
             Description = projectModel.ProjectDescription,
             IsActive = projectModel.IsActive ?? true,
+            Priority = projectModel.Priority ?? ProjectPriority.Medium,
+            EstimatedDeadline = projectModel.EstimatedDeadline,
+            Domain = projectModel.Domain,
             IsDeleted = false,
             CreatedBy = currentUserId,
             CreatedAt = DateTime.UtcNow,
@@ -118,7 +126,7 @@ public class ProjectService : IProjectService
             ProjectId = projectEntity.Id,
         };
         await _projectRepository.AddAsync(projectEntity);
-        await _userProjectRoleRepository.AddAsync(projectUserRole);
+        await InviteUsersToProjectAsync(projectEntity.Id, projectModel.InviteUsers, cancellation);
         await _projectRepository.SaveChangesAsync();
     }
 
@@ -131,16 +139,76 @@ public class ProjectService : IProjectService
         existingProject.ProjectKey = projectModel.ProjectKey ?? existingProject.ProjectKey;
         existingProject.Description = projectModel.ProjectDescription ?? existingProject.Description;
         existingProject.IsActive = projectModel.IsActive ?? existingProject.IsActive;
+        existingProject.Priority = projectModel.Priority ?? existingProject.Priority;
+        existingProject.EstimatedDeadline = projectModel.EstimatedDeadline ?? existingProject.EstimatedDeadline;
+        existingProject.Domain = projectModel.Domain ?? existingProject.Domain;
         existingProject.IsDeleted = false;
         existingProject.UpdatedAt = DateTime.UtcNow;
         existingProject.UpdatedBy = _userService.GetCurrentUserId();
 
+        await InviteUsersToProjectAsync(existingProject.Id, projectModel.InviteUsers, cancellation);
         await _projectRepository.SaveChangesAsync();
     }
 
-    private void ToProjectModelConvertion(ProjectEntity project)
+    private async Task InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
     {
-        // YET to be implemneted
+        if (inviteUsers == null || inviteUsers.Count == 0) return;
+        
+        foreach (var user in inviteUsers)
+        {
+            var isAlreadyInvited = await _userProjectRoleRepository
+                .GetByCondition(upr => upr.ProjectId == projectId && upr.UserId == user.UserId)
+                .AnyAsync(cancellation);
+
+            if (!isAlreadyInvited)
+            {
+                var userProjectRole = new UserProjectRole
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.UserId,
+                    RoleId = Constants.MemberRoleId,
+                    ProjectId = projectId,
+                };
+                await _userProjectRoleRepository.AddAsync(userProjectRole);
+                var invitationLink = $"{UrlConstants.BaseUrl}/projects";
+                var notificationsToSend = new List<NotificationContract>
+                {
+                    new NotificationContract(
+                        NotificationId: Guid.NewGuid(),
+                        Destination: user.UserEmail ?? string.Empty,
+                        TemplateId: "InvitationEmail", // Matches the HTML file name without extension
+                        TemplateData: new Dictionary<string, string>
+                        {
+                            { "Subject", "You have been invited to Vortex" },
+                            { "InvitationLink", invitationLink }
+                        },
+                        Timestamp: DateTime.UtcNow
+                    )
+                };
+                
+                if (notificationsToSend.Count != 0)
+                    await _bus.PublishBatch(notificationsToSend, cancellation);
+            }
+        }
+    }
+
+    private ProjectCardsDto ToProjectCardsDtoConversion(ProjectEntity project, bool isAdmin = false, bool isManager = false)
+    {
+        return new ProjectCardsDto
+        {
+            Title = project.ProjectName,
+            Description = project.Description,
+            ProjectKey = project.ProjectKey,
+            IsAcvtive = project.IsActive,
+            NumberOfCompletedTasks = 0,
+            NumberOfTotalTasks = 0,
+            StartDate = project.CreatedAt,
+            Priority = project.Priority,
+            EstimatedDeadline = project.EstimatedDeadline,
+            Domain = project.Domain,
+            CanDelete = isAdmin,
+            CanMark = isAdmin || isManager
+        };
     }
 
     #endregion

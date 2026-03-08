@@ -15,14 +15,14 @@ public class GenericRepository<TEntity>(VortexDbContext _dbContext) : IGenericRe
         return await _dbSet.FindAsync(id);
     }
 
-    public IQueryable<TEntity> GetAllAsync()
+    public async Task<IQueryable<TEntity>> GetAllAsync(CancellationToken cancellationToken)
     {
-       return _dbContext.Set<TEntity>().AsNoTracking();
+       return await Task.FromResult(_dbSet.AsNoTracking());
     }
 
     public IQueryable<TEntity> GetByCondition(Expression<Func<TEntity, bool>> expression)
     {
-        return  _dbContext.Set<TEntity>().Where(expression).AsNoTracking();
+        return  _dbSet.Where(expression).AsNoTracking();
     }
 
     public async Task AddAsync(TEntity entity)

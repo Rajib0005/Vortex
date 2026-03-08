@@ -102,7 +102,8 @@ public class AuthService(
             .ToListAsync(cancellationToken);
 
         // Filter out users who are new or not active in the assigned projects
-        var usersToInvite = inviteUserDto.Where(x => !alreadyActiveUsersInProjects.Contains(x.UserEmail.ToLower())).ToList();
+        var usersToInvite = inviteUserDto.Where(x => 
+            !alreadyActiveUsersInProjects.Contains(x.UserEmail.ToLower())).ToList();
 
         // Check for users who exist but are inactive and need a new invitation
         var existingInactiveUsers = await _userRepository

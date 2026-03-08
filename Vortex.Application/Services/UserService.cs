@@ -1,19 +1,12 @@
 using System.Security.Claims;
-using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Vortex.Application.Dtos;
 using Vortex.Application.Interfaces;
-using Vortex.Contracts;
 using Vortex.Domain.Dto;
 using Vortex.Domain.Entities;
 using Vortex.Domain.Exceptions;
 using Vortex.Domain.Repositories;
-using ProjectRoleDto = Vortex.Application.Dtos.ProjectRoleDto;
-using Vortex.Domain.Constants;
-using System.Text;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Vortex.Application.Services;
 
@@ -94,9 +87,6 @@ public class UserService: IUserService
             .GetByCondition(x => x.UserId == userId)
             .Select(x => x.Role)
             .FirstOrDefaultAsync(cancellationToken);
-
-        if (existingUser is null || role is null) throw new NotFoundException("User not found");
-
         var userDetails = new UserDetailsDto(
             existingUser.Id,
             existingUser.FullName ?? string.Empty,
@@ -107,9 +97,35 @@ public class UserService: IUserService
             role.Id,
             role.Name ?? string.Empty
         );
-        return userDetails;
+
+        if (userDetails is not null) return userDetails;
+
+        throw new NotFoundException("User not found");
     }
-    private async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
+
+    public async Task<List<UserToInviteInProject>> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    {
+        var usersWillBeInvited = new List<UserToInviteInProject>();
+        var users = await _userRepository.GetAllAsync(cancellation);
+
+        if (projectId is not null)
+        {
+            users = users.Where(x=> x.Projects.Any(y => y.ProjectId == projectId))
+                .Take(20)
+                .Skip(1);
+        }
+
+        var userOptions = users
+                .Select<UserEntity, UserToInviteInProject>(user => new UserToInviteInProject
+                {
+                    UserId = user.Id,
+                    UserEmail = user.Email,
+                });
+            usersWillBeInvited.AddRange(userOptions);
+        
+        return usersWillBeInvited;
+    }
+    public  async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
     {
         var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user => 
             userEmails.Contains(user.User.Email!) && projectIds.Contains(user.Project.Id)).Select(x=> x.User.Email).ToListAsync(cancellationToken);

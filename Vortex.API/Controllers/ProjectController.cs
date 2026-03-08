@@ -12,10 +12,12 @@ public class ProjectController : Controller
 {
     private readonly IProjectService _projectService;
     private readonly ILogger<ProjectController>  _logger;
-    public ProjectController(ILogger<ProjectController> logger, IProjectService projectService)
+    private readonly IUserService _userService; 
+    public ProjectController(ILogger<ProjectController> logger, IProjectService projectService, IUserService userService)
     {
         _logger = logger;
         _projectService = projectService;
+        _userService = userService;
     }
     
     [HttpPost("upsert-project")]
@@ -34,7 +36,7 @@ public class ProjectController : Controller
         }
     }
     
-    [HttpPost("get-projects")]
+    [HttpGet("get-projects")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GetAllProjectsForUser(Guid userId, CancellationToken cancellation)
     {
@@ -79,6 +81,22 @@ public class ProjectController : Controller
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error deleting project", [ex.Message]));
+        }
+    }
+
+    [HttpGet("get-projects-user-to-invite")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    {
+        try
+        {
+            var userDetails = await _userService.GetUserDetailsToInviteAsync(projectId, cancellation);
+            return Ok(BaseResponse<List<UserToInviteInProject>>.SuccessResponse(userDetails));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error retrieving user details", [ex.Message]));
         }
     }
 }

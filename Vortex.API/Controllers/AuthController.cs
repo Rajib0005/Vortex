@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("login")]
-    public async Task<ActionResult> Login(AuthDto authModel, CancellationToken cancellationToken)
+    public async Task<ActionResult> Login([FromBody]AuthDto authModel, CancellationToken cancellationToken)
     {
         try
         {
