@@ -30,6 +30,13 @@ public class UserService(
         return Guid.TryParse(userId, out var guid) ? guid : Guid.Empty;
     }
 
+    public Guid GetCurrentUserRoleId()
+    {
+        var userClaim = _httpContextAccessor?.HttpContext?.User.FindFirst(ClaimTypes.Role);
+        var roleId = userClaim != null ? userClaim.Value : string.Empty;
+        return Guid.TryParse(roleId, out var guid) ? guid : Guid.Empty;
+    }
+
     public async Task<bool> IsExistingUser(string email, CancellationToken cancellationToken)
     {
         return await _userRepository.GetByCondition(u => u.Email == email)

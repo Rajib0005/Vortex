@@ -8,4 +8,5 @@ public interface IProjectService
     Task DeleteProject(Guid projectId, CancellationToken ct = default);
     Task<IEnumerable<ProjectCardsDto>> GetProjectsOfUser(Guid userId, CancellationToken ct = default);
     Task<ProjectCardsDto> GetProjectDetailsById(Guid projectId);
+    Task<UpsertProjectDto> GetProjectDetailsForUpdateAsync(Guid projectId, CancellationToken ct = default);
 }
