@@ -243,40 +243,38 @@ public class ProjectService : IProjectService
         {
             var existingRole = currentProjectRoles.FirstOrDefault(upr => upr.UserId == user.UserId);
 
-            if (existingRole == null)
+            if (existingRole != null) continue;
+            var userProjectRole = new UserProjectRole
             {
-                var userProjectRole = new UserProjectRole
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.UserId,
-                    RoleId = Constants.MemberRoleId,
-                    ProjectId = projectId,
-                };
+                Id = Guid.NewGuid(),
+                UserId = user.UserId,
+                RoleId = existingRole?.RoleId == Constants.AdminRoleId ? existingRole.RoleId : Constants.MemberRoleId,
+                ProjectId = projectId,
+            };
                 
-                try 
-                {
-                    await _userProjectRoleRepository.AddAsync(userProjectRole);
+            try 
+            {
+                await _userProjectRoleRepository.AddAsync(userProjectRole);
                     
-                    var userDetails = await _userService.GetUserDetailsByIdAsync(user.UserId, cancellation);
-                    var resolvedEmail = userDetails.Email ?? string.Empty;
-                    var invitationLink = $"{UrlConstants.BaseUrl}/projects";
+                var userDetails = await _userService.GetUserDetailsByIdAsync(user.UserId, cancellation);
+                var resolvedEmail = userDetails.Email ?? string.Empty;
+                var invitationLink = $"{UrlConstants.BaseUrl}/projects";
                     
-                    notificationsToPublish.Add(new NotificationContract(
-                        NotificationId: Guid.NewGuid(),
-                        Destination: resolvedEmail,
-                        TemplateId: "InvitationEmail",
-                        TemplateData: new Dictionary<string, string>
-                        {
-                            { "Subject", "You have been invited to Vortex" },
-                            { "InvitationLink", invitationLink }
-                        },
-                        Timestamp: DateTime.UtcNow
-                    ));
-                }
-                catch (DbUpdateException){
-                    // Ignore duplicate key or constraint violation for concurrent inserts
-                    continue;
-                }
+                notificationsToPublish.Add(new NotificationContract(
+                    NotificationId: Guid.NewGuid(),
+                    Destination: resolvedEmail,
+                    TemplateId: "InvitationEmail",
+                    TemplateData: new Dictionary<string, string>
+                    {
+                        { "Subject", "You have been invited to Vortex" },
+                        { "InvitationLink", invitationLink }
+                    },
+                    Timestamp: DateTime.UtcNow
+                ));
+            }
+            catch (DbUpdateException){
+                // Ignore duplicate key or constraint violation for concurrent inserts
+                continue;
             }
         }
         

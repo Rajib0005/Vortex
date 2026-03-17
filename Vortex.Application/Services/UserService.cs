@@ -69,37 +69,63 @@ public class UserService(
 
         return userDetails;
     }
-
-    public async Task<List<UserToInviteInProject>> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    
+    public async Task<List<UserToInviteInProject>> GetInvitingUsersList(CancellationToken cancellation)
     {
-        var usersWillBeInvited = new List<UserToInviteInProject>();
-        var usersQuery = _userRepository.GetByCondition(x => true);
-
-        if (projectId is not null)
-        {
-            usersQuery = usersQuery.Where(x => x.Projects.Any(y => y.ProjectId == projectId));
-        }
-
-        var users = await usersQuery.Take(20).ToListAsync(cancellation);
-
-        var userOptions = users.Select(user => new UserToInviteInProject
-        {
-            UserId = user.Id,
-            UserEmail = user.Email ?? string.Empty,
-        });
+        var usersToInvite = new List<UserToInviteInProject>();
         
-        usersWillBeInvited.AddRange(userOptions);
-
-        return usersWillBeInvited;
+        var users = await _userRepository.GetByCondition(x => x.IsActive).ToListAsync(cancellation);
+        if (users.Count <= 0) return usersToInvite;
+        var usersWillBeInvited = users.Select(x => new UserToInviteInProject
+        {
+            UserId = x.Id,
+            UserEmail = x.Email,
+        }).ToList();
+        
+        usersToInvite.AddRange(usersWillBeInvited);
+        return usersToInvite;
     }
 
-    public async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
-    {
-        var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user =>
-            userEmails.Contains(user.User.Email!) && user.ProjectId.HasValue && projectIds.Contains(user.ProjectId.Value))
-            .Select(x => x.User.Email)
-            .ToListAsync(cancellationToken);
+    #region private methods
 
-        return usersAlreadyInSameProject.Where(x => x is not null).Select(x => x!).ToList();
-    }
+    // private List<UserToInviteInProject> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    // {
+    //     var usersWillBeInvited = new List<UserToInviteInProject>();
+    //     // var usersQuery =  _userRepository.GetByCondition(x => x.IsActive);
+    //     var users = new List<UserProjectRole>();
+    //     if (projectId is not null)
+    //     {
+    //         users = _userProjectRoleRepository.GetByCondition(x => x.ProjectId == projectId)
+    //             .Include(x => x.User)
+    //             .ToList();
+    //     }
+    //     else
+    //     {
+    //         users = _userProjectRoleRepository.GetByCondition(x => x.User.IsActive)
+    //             .Include(x => x.User)
+    //             .Take(20)
+    //             .ToList();
+    //     }
+    //     var userOptions = users.Select(user => new UserToInviteInProject
+    //     {
+    //         UserId = user.UserId,
+    //         UserEmail = user.User.Email ?? string.Empty,
+    //     }).ToList();
+    //     
+    //     usersWillBeInvited.AddRange(userOptions);
+    //
+    //     return usersWillBeInvited;
+    // }
+    //
+    // public async Task<List<string>> GetAlreadyExistingUsersInProject(List<string> userEmails, List<Guid> projectIds, CancellationToken cancellationToken)
+    // {
+    //     var usersAlreadyInSameProject = await _userProjectRoleRepository.GetByCondition(user =>
+    //             userEmails.Contains(user.User.Email!) && user.ProjectId.HasValue && projectIds.Contains(user.ProjectId.Value))
+    //         .Select(x => x.User.Email)
+    //         .ToListAsync(cancellationToken);
+    //
+    //     return usersAlreadyInSameProject.Where(x => x is not null).Select(x => x!).ToList();
+    // }
+
+    #endregion
 }

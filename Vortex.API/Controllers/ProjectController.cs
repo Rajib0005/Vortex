@@ -102,11 +102,11 @@ public class ProjectController : Controller
 
     [HttpGet("get-projects-user-to-invite")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    public async Task<IActionResult> GetUserDetailsToInviteAsync([FromQuery] Guid? projectId, CancellationToken cancellation)
     {
         try
         {
-            var userDetails = await _userService.GetUserDetailsToInviteAsync(projectId, cancellation);
+            var userDetails = await _userService.GetInvitingUsersList(cancellation);
             return Ok(BaseResponse<List<UserToInviteInProject>>.SuccessResponse(userDetails));
         }
         catch (Exception ex)
