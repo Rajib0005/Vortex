@@ -32,12 +32,7 @@ public class TaskService(
         var task = _mapper.Map<TaskEntity>(dto);
         task.Id = Guid.NewGuid();
         task.TaskKey = taskKey;
-        task.TaskName = dto.TaskName;
-        task.Description = dto.Description;
-        task.AssigneeId = dto.AssigneeId;
         task.ReporterId = dto.ReporterId ?? _currentUserService.UserId;
-        task.ProjectId = dto.ProjectId;
-        task.Status = dto.Status;
         task.StartDate = dto.StartDate ?? DateTime.UtcNow;
         task.RemainingEstimateMinutes = dto.RemainingEstimateMinutes ?? dto.OriginalEstimateMinutes;
         task.CreatedAt = DateTime.UtcNow;
