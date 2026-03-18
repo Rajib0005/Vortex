@@ -229,15 +229,18 @@ public class ProjectService : IProjectService
         var currentProjectRoles = await _userProjectRoleRepository
             .GetByCondition(upr => upr.ProjectId == projectId)
             .ToListAsync(cancellation);
-        var usersToKeepIds = inviteUsers?.Select(u => u.UserId).ToList() ?? [];
-        var rolesToRemove = currentProjectRoles.Where(upr => !usersToKeepIds.Contains(upr.UserId)).ToList();
+        if (inviteUsers == null || inviteUsers.Count == 0) return notificationsToPublish;
+        var usersToKeepIds = inviteUsers.Select(u => u.UserId).ToList();
+
+        if(usersToKeepIds.Count == 0) throw new BadRequestException("Invalid user email");
+        var rolesToRemove = currentProjectRoles.Where(upr => !usersToKeepIds.Contains(upr.UserId))
+            .ToList();
         
         if (rolesToRemove.Count != 0)
         {
             _userProjectRoleRepository.DeleteRangeAsync(rolesToRemove);
         }
 
-        if (inviteUsers == null || inviteUsers.Count == 0) return notificationsToPublish;
         
         foreach (var user in inviteUsers)
         {
