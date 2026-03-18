@@ -37,7 +37,7 @@ public class ProjectController : Controller
     }
     
     [HttpGet("get-projects")]
-    [Authorize(Roles = "Admin, Manager")]
+    [Authorize]
     public async Task<IActionResult> GetAllProjectsForUser(Guid userId, CancellationToken cancellation)
     {
         try
@@ -52,7 +52,7 @@ public class ProjectController : Controller
         }
     }
 
-    [HttpPost("get-projects-project")]
+    [HttpPost("get-projects-overview")]
     [Authorize(Roles = "Admin, Manager")]
     public async Task<IActionResult> GetAllProjectDetails(Guid projectId)
     {
@@ -65,6 +65,22 @@ public class ProjectController : Controller
         {
             _logger.LogError(ex, ex.Message);
             return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error retrieving project", [ex.Message]));
+        }
+    }
+
+    [HttpGet("get-project-details-for-edit")]
+    [Authorize(Roles = "Admin, Manager")]
+    public async Task<IActionResult> GetProjectDetailsForUpdate(Guid projectId, CancellationToken cancellation)
+    {
+        try
+        {
+            var projectDetails = await _projectService.GetProjectDetailsForUpdateAsync(projectId, cancellation);
+            return Ok(BaseResponse<UpsertProjectDto>.SuccessResponse(projectDetails));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, BaseResponse<Exception>.FailureResponse("Error retrieving project details for update", [ex.Message]));
         }
     }
 
@@ -86,11 +102,11 @@ public class ProjectController : Controller
 
     [HttpGet("get-projects-user-to-invite")]
     [Authorize(Roles = "Admin, Manager")]
-    public async Task<IActionResult> GetUserDetailsToInviteAsync(Guid? projectId, CancellationToken cancellation)
+    public async Task<IActionResult> GetUserDetailsToInviteAsync([FromQuery] Guid? projectId, CancellationToken cancellation)
     {
         try
         {
-            var userDetails = await _userService.GetUserDetailsToInviteAsync(projectId, cancellation);
+            var userDetails = await _userService.GetInvitingUsersList(cancellation);
             return Ok(BaseResponse<List<UserToInviteInProject>>.SuccessResponse(userDetails));
         }
         catch (Exception ex)

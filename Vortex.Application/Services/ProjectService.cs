@@ -58,8 +58,6 @@ public class ProjectService : IProjectService
     public async Task<IEnumerable<ProjectCardsDto>> GetProjectsOfUser(Guid userId, CancellationToken cancellation)
     {
         var currentUser = await _userService.GetUserDetailsByIdAsync(cancellation);
-        var isAdmin = currentUser.RoleId == Constants.AdminRoleId;
-        var isManager = currentUser.RoleId == Constants.ManagerRoleId;
         var projects = await _userProjectRoleRepository
             .GetByCondition(x => x.UserId == userId && x.Project.IsActive && !x.Project.IsDeleted)
             .OrderByDescending((x)=> x.Project.CreatedAt)
@@ -76,8 +74,8 @@ public class ProjectService : IProjectService
                 Priority = upr.Project.Priority,
                 EstimatedDeadline = upr.Project.EstimatedDeadline,
                 Domain = upr.Project.Domain,
-                CanDelete = isAdmin,
-                CanMark = isAdmin || isManager
+                CanDelete = upr.RoleId == Constants.AdminRoleId,
+                CanMark = upr.RoleId == Constants.AdminRoleId || upr.RoleId == Constants.ManagerRoleId
             }).ToListAsync(cancellation);
         return projects;
     }
@@ -98,6 +96,45 @@ public class ProjectService : IProjectService
         projectDetails.CanMark = isAdmin || isManager;
 
         return projectDetails;
+    }
+
+    public async Task<UpsertProjectDto> GetProjectDetailsForUpdateAsync(Guid projectId,
+        CancellationToken cancellation)
+    {
+        var existingProject = await _projectRepository.GetByIdAsync(projectId);
+        if (existingProject is null) throw new BadRequestException("No project found");
+
+        var currentUserId = _userService.GetCurrentUserId();
+        var currentUserRoleId = _userService.GetCurrentUserRoleId();
+        var userProjectRole = await _userProjectRoleRepository.GetByCondition((x)=> x.ProjectId == projectId && x.UserId == currentUserId)
+            .FirstOrDefaultAsync(cancellation);
+        if(userProjectRole is null) throw new BadRequestException("No project found");
+        
+        if(userProjectRole.RoleId != Constants.AdminRoleId && userProjectRole.RoleId != Constants.ManagerRoleId) throw new BadRequestException("You are not authorized to update this project");
+
+        var invitedUsers = await _userProjectRoleRepository
+            .GetByCondition(x => x.ProjectId == projectId)
+            .Include(x => x.User)
+            .Select(x => new UserToInviteInProject
+            {
+                UserId = x.UserId,
+                UserEmail = x.User.Email ?? string.Empty
+            }).ToListAsync(cancellation);
+
+        var projectModel = new UpsertProjectDto
+        {
+            ProjectId = existingProject.Id,
+            ProjectName = existingProject.ProjectName,
+            ProjectKey = existingProject.ProjectKey,
+            ProjectDescription = existingProject.Description,
+            IsActive = existingProject.IsActive,
+            Priority = existingProject.Priority,
+            EstimatedDeadline = existingProject.EstimatedDeadline,
+            Domain = existingProject.Domain,
+            InviteUsers = invitedUsers
+        };
+        
+        return projectModel;
     }
 
     #region private methods
@@ -189,45 +226,47 @@ public class ProjectService : IProjectService
     private async Task<List<NotificationContract>> InviteUsersToProjectAsync(Guid projectId, List<UserToInviteInProject> inviteUsers, CancellationToken cancellation)
     {
         var notificationsToPublish = new List<NotificationContract>();
+        var currentProjectRoles = await _userProjectRoleRepository
+            .GetByCondition(upr => upr.ProjectId == projectId)
+            .ToListAsync(cancellation);
         if (inviteUsers == null || inviteUsers.Count == 0) return notificationsToPublish;
+        var usersToKeepIds = inviteUsers.Select(u => u.UserId).ToList();
+
+        if(usersToKeepIds.Count == 0) throw new BadRequestException("Invalid user email");
+        var rolesToRemove = currentProjectRoles.Where(upr => !usersToKeepIds.Contains(upr.UserId))
+            .ToList();
+        
+        if (rolesToRemove.Count != 0)
+        {
+            _userProjectRoleRepository.DeleteRangeAsync(rolesToRemove);
+        }
+
         
         foreach (var user in inviteUsers)
         {
-            var isAlreadyInvited = await _userProjectRoleRepository
-                .GetByCondition(upr => upr.ProjectId == projectId && upr.UserId == user.UserId)
-                .AnyAsync(cancellation);
+            var existingRole = currentProjectRoles.FirstOrDefault(upr => upr.UserId == user.UserId);
 
-            if (!isAlreadyInvited)
+            if (existingRole != null) continue;
+            var userProjectRole = new UserProjectRole
             {
-                var userProjectRole = new UserProjectRole
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.UserId,
-                    RoleId = Constants.MemberRoleId,
-                    ProjectId = projectId,
-                };
+                Id = Guid.NewGuid(),
+                UserId = user.UserId,
+                RoleId = existingRole?.RoleId == Constants.AdminRoleId ? existingRole.RoleId : Constants.MemberRoleId,
+                ProjectId = projectId,
+            };
                 
-                try
-                {
-                    await _userProjectRoleRepository.AddAsync(userProjectRole);
-                    // SaveChangesAsync is removed here so it's managed by the caller's transaction
-                }
-                catch (DbUpdateException)
-                {
-                    // Ignore duplicate key or constraint violation for concurrent inserts
-                    continue;
-                }
-
-                // Resolve the recipient email from the authoritative user record
+            try 
+            {
+                await _userProjectRoleRepository.AddAsync(userProjectRole);
+                    
                 var userDetails = await _userService.GetUserDetailsByIdAsync(user.UserId, cancellation);
                 var resolvedEmail = userDetails.Email ?? string.Empty;
-
                 var invitationLink = $"{UrlConstants.BaseUrl}/projects";
-                
+                    
                 notificationsToPublish.Add(new NotificationContract(
                     NotificationId: Guid.NewGuid(),
                     Destination: resolvedEmail,
-                    TemplateId: "InvitationEmail", // Matches the HTML file name without extension
+                    TemplateId: "InvitationEmail",
                     TemplateData: new Dictionary<string, string>
                     {
                         { "Subject", "You have been invited to Vortex" },
@@ -236,7 +275,12 @@ public class ProjectService : IProjectService
                     Timestamp: DateTime.UtcNow
                 ));
             }
+            catch (DbUpdateException){
+                // Ignore duplicate key or constraint violation for concurrent inserts
+                continue;
+            }
         }
+        
         return notificationsToPublish;
     }
     #endregion
