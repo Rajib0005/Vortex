@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Vortex.Application.Dtos.Filtering;
 using Vortex.Application.Interfaces;
 using Vortex.Application.Services;
 
@@ -16,6 +17,10 @@ public static class DependencyInjection
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<ITaskService, TaskService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
+
+        // Filtering
+        services.AddScoped<IFilteringService, FilteringService>();
+
         return services;
     }
 }

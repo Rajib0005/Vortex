@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Vortex.Application.Dtos;
+using Vortex.Application.Dtos.Filtering;
 using Vortex.Application.Interfaces;
 using Vortex.Domain.Dto;
 
@@ -16,16 +17,16 @@ public class TaskController(ITaskService taskService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreateTask([FromBody] UpsertTaskDto dto, CancellationToken ct)
     {
-        var result = await _taskService.CreateTaskAsync(dto, ct);
-        return Ok(BaseResponse<TaskDto>.SuccessResponse(result, "Task created successfully"));
+        await _taskService.CreateTaskAsync(dto, ct);
+        return Ok(BaseResponse<string>.SuccessResponse("Task created successfully"));
     }
 
     [HttpPut("{taskId}/update-task")]
     [Authorize]
     public async Task<IActionResult> UpdateTask(Guid taskId, [FromBody] UpsertTaskDto dto, CancellationToken ct)
     {
-        var result = await _taskService.UpdateTaskAsync(taskId, dto, ct);
-        return Ok(BaseResponse<TaskDto>.SuccessResponse(result, "Task updated successfully"));
+        await _taskService.UpdateTaskAsync(taskId, dto, ct);
+        return Ok(BaseResponse<string>.SuccessResponse("Task updated successfully"));
     }
 
     [HttpDelete("{taskId}/delete-task")]
@@ -59,5 +60,20 @@ public class TaskController(ITaskService taskService) : ControllerBase
     {
         await _taskService.AssignTaskAsync(taskId, assigneeId, ct);
         return Ok(BaseResponse<string>.SuccessResponse("Task assigned successfully"));
+    }
+
+    /// <summary>
+    /// Multi-filter endpoint for tasks within a project.
+    /// Query string example: ?Statuses=0&amp;Statuses=2&amp;AssigneeIds=guid&amp;Page=1&amp;PageSize=20
+    /// </summary>
+    [HttpGet("{projectId}/tasks/filter")]
+    [Authorize(Roles = "Admin, Manager, Member")]
+    public async Task<IActionResult> GetFilteredTasks(
+        Guid projectId,
+        [FromQuery] TaskFilterQuery filter,
+        CancellationToken ct)
+    {
+        var result = await _taskService.GetFilteredTasksAsync(projectId, filter, ct);
+        return Ok(BaseResponse<PagedResult<TaskDto>>.SuccessResponse(result, "Tasks fetched successfully"));
     }
 }
