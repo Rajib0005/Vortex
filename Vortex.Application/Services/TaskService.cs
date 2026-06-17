@@ -111,15 +111,13 @@ public class TaskService(
             .ProjectTo<TaskDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
     }
-
     public async Task<PagedResult<TaskDto>> GetFilteredTasksAsync(
         Guid projectId,
         TaskFilterQuery filter,
         CancellationToken cancellationToken = default)
     {
-        // Build a safe, immutable filter with ProjectId enforced from the route
         var safeFilter = new TaskFilterQueryBuilder()
-            .ForProject(projectId)
+            .UnderParent(filter.ParentTaskId)
             .WithStatuses(filter.Statuses.ToArray())
             .WithPriorities(filter.Priorities.ToArray())
             .WithTaskTypes(filter.TaskTypes.ToArray())
@@ -136,6 +134,6 @@ public class TaskService(
 
         var source = _taskRepository.GetByCondition(_ => true);
         return await _filteringService.GetFilteredAsync<TaskEntity, TaskFilterQuery, TaskDto>(
-            source, safeFilter, new TaskFilterSpecification(), cancellationToken);
+            source, safeFilter, new TaskFilterSpecification(projectId), cancellationToken);
     }
 }

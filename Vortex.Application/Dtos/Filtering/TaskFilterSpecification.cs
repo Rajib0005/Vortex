@@ -6,15 +6,17 @@ namespace Vortex.Application.Dtos.Filtering;
 /// Composes all task filter predicates into a single IQueryable chain.
 /// Adding a new filter dimension = one new property on TaskFilterQuery + one if-block here.
 /// </summary>
-public sealed class TaskFilterSpecification
+public sealed class TaskFilterSpecification(Guid projectId)
     : IFilterSpecification<TaskEntity, TaskFilterQuery>
 {
+    private readonly Guid _projectId = projectId;
+
     public IQueryable<TaskEntity> Apply(
         IQueryable<TaskEntity> query,
         TaskFilterQuery filter)
     {
         // Scope — always filter by project
-        query = query.Where(t => t.ProjectId == filter.ProjectId);
+        query = query.Where(t => t.ProjectId == _projectId);
 
         if (filter.ParentTaskId.HasValue)
             query = query.Where(t => t.ParentTaskId == filter.ParentTaskId);

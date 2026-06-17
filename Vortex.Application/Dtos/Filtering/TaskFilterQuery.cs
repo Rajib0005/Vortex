@@ -11,7 +11,6 @@ namespace Vortex.Application.Dtos.Filtering;
 public sealed class TaskFilterQuery : BaseFilterQuery
 {
     // Scope
-    public Guid  ProjectId    { get; init; }
     public Guid? ParentTaskId { get; init; }
 
     // Multi-select enum filters

@@ -20,6 +20,20 @@ public class TaskController(ITaskService taskService) : ControllerBase
         await _taskService.CreateTaskAsync(dto, ct);
         return Ok(BaseResponse<string>.SuccessResponse("Task created successfully"));
     }
+    /// <summary>
+    /// Multi-filter endpoint for tasks within a project.
+    /// Query string example: ?Statuses=0&amp;Statuses=2&amp;AssigneeIds=guid&amp;Page=1&amp;PageSize=20
+    /// </summary>
+    [HttpGet("{projectId}/tasks")]
+    [Authorize(Roles = "Admin, Manager, Member")]
+    public async Task<IActionResult> GetFilteredTasks(
+        Guid projectId,
+        [FromQuery] TaskFilterQuery filter,
+        CancellationToken ct)
+    {
+        var result = await _taskService.GetFilteredTasksAsync(projectId, filter, ct);
+        return Ok(BaseResponse<PagedResult<TaskDto>>.SuccessResponse(result, "Tasks fetched successfully"));
+    }
 
     [HttpPut("{taskId}/update-task")]
     [Authorize]
@@ -46,14 +60,6 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{projectId}/tasks")]
-    [Authorize]
-    public async Task<IActionResult> GetTasksByProject(Guid projectId, CancellationToken ct)
-    {
-        var result = await _taskService.GetTasksByProjectAsync(projectId, ct);
-        return Ok(result);
-    }
-
     [HttpPatch("{taskId}/assign/{assigneeId}")]
     [Authorize]
     public async Task<IActionResult> AssignTask(Guid taskId, Guid assigneeId, CancellationToken ct)
@@ -62,18 +68,4 @@ public class TaskController(ITaskService taskService) : ControllerBase
         return Ok(BaseResponse<string>.SuccessResponse("Task assigned successfully"));
     }
 
-    /// <summary>
-    /// Multi-filter endpoint for tasks within a project.
-    /// Query string example: ?Statuses=0&amp;Statuses=2&amp;AssigneeIds=guid&amp;Page=1&amp;PageSize=20
-    /// </summary>
-    [HttpGet("{projectId}/tasks/filter")]
-    [Authorize(Roles = "Admin, Manager, Member")]
-    public async Task<IActionResult> GetFilteredTasks(
-        Guid projectId,
-        [FromQuery] TaskFilterQuery filter,
-        CancellationToken ct)
-    {
-        var result = await _taskService.GetFilteredTasksAsync(projectId, filter, ct);
-        return Ok(BaseResponse<PagedResult<TaskDto>>.SuccessResponse(result, "Tasks fetched successfully"));
-    }
 }

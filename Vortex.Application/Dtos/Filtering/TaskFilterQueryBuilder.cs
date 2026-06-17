@@ -10,7 +10,6 @@ namespace Vortex.Application.Dtos.Filtering;
 /// </summary>
 public sealed class TaskFilterQueryBuilder
 {
-    private Guid                  _projectId;
     private Guid?                 _parentTaskId;
     private List<TaskStatus>      _statuses    = [];
     private List<TaskPriority>    _priorities  = [];
@@ -26,7 +25,6 @@ public sealed class TaskFilterQueryBuilder
     private string _sortBy = "CreatedAt";
     private bool _sortDesc = true;
 
-    public TaskFilterQueryBuilder ForProject(Guid id)                           { _projectId = id; return this; }
     public TaskFilterQueryBuilder UnderParent(Guid? parentId)                   { _parentTaskId = parentId; return this; }
     public TaskFilterQueryBuilder WithStatuses(params TaskStatus[] s)           { _statuses.AddRange(s); return this; }
     public TaskFilterQueryBuilder WithPriorities(params TaskPriority[] p)       { _priorities.AddRange(p); return this; }
@@ -43,7 +41,6 @@ public sealed class TaskFilterQueryBuilder
 
     public TaskFilterQuery Build() => new()
     {
-        ProjectId     = _projectId,
         ParentTaskId  = _parentTaskId,
         Statuses      = _statuses.AsReadOnly(),
         Priorities    = _priorities.AsReadOnly(),

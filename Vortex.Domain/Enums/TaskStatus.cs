@@ -2,9 +2,9 @@ namespace Vortex.Domain;
 
 public enum TaskStatus
 {
-    Todo = 0,
-    InProgress = 1,
-    OnReview = 2,
-    OnTest = 3,
-    Done = 4
+    Backlog = 0,
+    Todo = 1,
+    InProgress = 2,
+    Done = 3,
+    Canceled = 4
 }
